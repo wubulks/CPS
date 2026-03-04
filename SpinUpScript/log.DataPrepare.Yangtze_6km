@@ -1,0 +1,104 @@
+05-30 02:21:38 [INFO    ]    
+05-30 02:21:38 [INFO    ]          **********************************
+05-30 02:21:38 [INFO    ]            *** CoLM Spin-Up for CRESM ***  
+05-30 02:21:38 [INFO    ]          **********************************
+
+
+05-30 02:21:38 [INFO    ]           Case Name: Yangtze_6km 
+
+
+05-30 02:21:38 [INFO    ]    Reading configuration file...
+05-30 02:21:38 [INFO    ]        Read configuration file: ./SpinUp.ini
+
+
+05-30 02:21:38 [INFO    ]    Checking the configuration file...
+05-30 02:21:38 [INFO    ]        ==========> Check Configuration <==========
+05-30 02:21:38 [INFO    ]          Section          : BaseInfo
+05-30 02:21:38 [INFO    ]          Section          : Yangtze_6km
+05-30 02:21:38 [INFO    ]          CleanTempFiles   : True
+05-30 02:21:38 [INFO    ]          GoFirstPeriod    : True
+05-30 02:21:38 [INFO    ]          GoSecondPeriod   : True
+05-30 02:21:38 [INFO    ]          GoThirdPeriod    : True
+05-30 02:21:38 [INFO    ]          GoMakeIni        : True
+05-30 02:21:38 [INFO    ]          CoLMCasePath     : /tera07/zhangsl/wumej22/Omarjan/CRESMDataPrep/Cases/Yangtze_6km/Yangtze_6km/Basic
+05-30 02:21:38 [INFO    ]          ScriptPath       : /home/wumej22/drive/Omarjan/CRESMDataPrep/SpinUpScript
+05-30 02:21:38 [INFO    ]          MeshFilePath     : /tera07/zhangsl/wumej22/Omarjan/CRESMDataPrep/Cases/Yangtze_6km/Yangtze_6km/Basic/mesh_cwrf_Yangtze_6km.nc
+05-30 02:21:38 [INFO    ]          CoLMRawDataPath  : /shr03/CoLMrawdata
+05-30 02:21:38 [INFO    ]          CoLMRunDataPath  : /shr03/CoLMruntime
+05-30 02:21:38 [INFO    ]          CoLMForcDataPath : /shr03/CoLM_Forcing
+05-30 02:21:38 [INFO    ]          Time             : 1991-01-01_00:00:00 - 2000-01-01_00:00:00
+05-30 02:21:38 [INFO    ]          CoLMCoreNum      : 128
+05-30 02:21:38 [INFO    ]          TimeStep         : 3600
+05-30 02:21:38 [INFO    ]          WriteRestartFreq : YEARLY, MONTHLY, DAILY
+05-30 02:21:38 [INFO    ]          WriteHistoryFreq : YEARLY, YEARLY, YEARLY
+05-30 02:21:38 [INFO    ]          ForcingDataName  : ERA5LAND
+05-30 02:21:38 [INFO    ]        ✓  Check configuration file finished!
+
+
+05-30 02:21:38 [INFO    ]    Making directory...
+05-30 02:21:38 [INFO    ]        Directories for case < Yangtze_6km > created.
+
+
+05-30 02:21:38 [INFO    ]    Modifying CoLM namelist file...
+05-30 02:21:38 [INFO    ]        -> Modified CoLM namelist file: unstructured_cwrf.colm.Yangtze_6km.First
+05-30 02:21:38 [INFO    ]        ** The SpinUpStartTime is the first month of the year, so the second period will not run.
+05-30 02:21:38 [INFO    ]        ** The SpinUpStartTime is the first day of the month, so the third period will not run.
+05-30 02:21:38 [INFO    ]        ✓  CoLM namelist file modified!
+
+
+05-30 02:21:38 [INFO    ]    Printing time period information...
+05-30 02:21:38 [INFO    ]    
+05-30 02:21:38 [INFO    ]              Period:     | --------- First ---------- | ----- Second ----- | --- Three --- |
+05-30 02:21:38 [INFO    ]                Time: 1991-01-01                   2000-01-01           2000-01-01      2000-01-01
+05-30 02:21:38 [INFO    ]                          ●----------------------------●--------------------●---------------●
+05-30 02:21:38 [INFO    ]    WriteRestartFreq:     ●           YEARLY           ●      * SKIP *      ●    * SKIP *   ●
+05-30 02:21:38 [INFO    ]    WriteHistoryFreq:     ●           YEARLY           ●      * SKIP *      ●    * SKIP *   ●
+
+
+05-30 02:21:38 [INFO    ]     *** Making Initial Data ***
+05-30 02:21:38 [INFO    ]        Initializing for First period...
+05-30 02:21:38 [INFO    ]        ==========> Make Initial Data <==========
+05-30 02:22:02 [INFO    ]        -> restart files:
+05-30 02:22:02 [INFO    ]            unstructured_cwrf_Yangtze_6km/restart/const
+05-30 02:22:02 [INFO    ]            unstructured_cwrf_Yangtze_6km/restart/1991-001-00000
+05-30 02:22:02 [INFO    ]        ✓  Make CoLM initial data finished!
+
+
+05-30 02:22:02 [INFO    ]     *** Running The First period ***
+05-30 02:22:02 [INFO    ]        ==========> CoLM Spin-Up <==========
+05-30 02:22:02 [INFO    ]        StartTime : 1991-01-01 00:00:00
+05-30 02:22:02 [INFO    ]        EndTime   : 2000-01-01 00:00:00
+05-30 08:19:31 [INFO    ]        -> restart files:
+05-30 08:19:31 [INFO    ]            unstructured_cwrf_Yangtze_6km/restart/const
+05-30 08:19:31 [INFO    ]            unstructured_cwrf_Yangtze_6km/restart/1991-001-00000
+05-30 08:19:31 [INFO    ]            unstructured_cwrf_Yangtze_6km/restart/1992-001-00000
+05-30 08:19:31 [INFO    ]            unstructured_cwrf_Yangtze_6km/restart/1993-001-00000
+05-30 08:19:31 [INFO    ]            unstructured_cwrf_Yangtze_6km/restart/1994-001-00000
+05-30 08:19:31 [INFO    ]            unstructured_cwrf_Yangtze_6km/restart/1995-001-00000
+05-30 08:19:31 [INFO    ]            unstructured_cwrf_Yangtze_6km/restart/1996-001-00000
+05-30 08:19:31 [INFO    ]            unstructured_cwrf_Yangtze_6km/restart/1997-001-00000
+05-30 08:19:31 [INFO    ]            unstructured_cwrf_Yangtze_6km/restart/1998-001-00000
+05-30 08:19:31 [INFO    ]            unstructured_cwrf_Yangtze_6km/restart/1999-001-00000
+05-30 08:19:31 [INFO    ]            unstructured_cwrf_Yangtze_6km/restart/2000-001-00000
+05-30 08:19:31 [INFO    ]        ✓  First period finished!
+
+
+05-30 08:19:31 [INFO    ]     *** Running The Second period ***
+05-30 08:19:31 [INFO    ]        ** The SpinUpStartTime is the first month of the year, so the second period will not run.
+05-30 08:19:31 [INFO    ]        ==========> Skip Second Period <==========
+
+
+05-30 08:19:31 [INFO    ]     *** Running The Third period ***
+05-30 08:19:31 [INFO    ]        ** The SpinUpStartTime is the first day of the month, so the third period will not run.
+05-30 08:19:31 [INFO    ]        ==========> Skip Third Period <==========
+
+
+05-30 08:19:31 [INFO    ]    [PostProc] *** Cleaning Temporary Files ***
+05-30 08:19:33 [INFO    ]        ==========> Clean Temporary Files <==========
+05-30 08:19:33 [INFO    ]        -> Remove /tera07/zhangsl/wumej22/Omarjan/CRESMDataPrep/Cases/Yangtze_6km/Yangtze_6km/Basic/tmpdir
+05-30 08:19:33 [INFO    ]    
+05-30 08:19:33 [INFO    ]          *********************************
+05-30 08:19:33 [INFO    ]            *** Successfully Finished ***  
+05-30 08:19:33 [INFO    ]          *********************************
+
+05-30 08:19:33 [INFO    ]    Total time: 21474.62 seconds

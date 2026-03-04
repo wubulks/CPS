@@ -1,0 +1,73 @@
+&share
+wrf_core = 'ARW',
+max_dom = 1,
+start_date = 'StartTime','1998-08-16_12:00:00',
+end_date   = 'EndTime','2006-08-16_12:00:00',
+interval_seconds =21600,!86400,!21600,!86400,!21600,!86400,
+active_grid = .true., .true., .true.,
+subgrid_ratio_x = 1
+subgrid_ratio_y = 1
+io_form_geogrid = 2,
+opt_output_from_geogrid_path = './',
+debug_level = 0
+/
+
+&geogrid
+parent_id         =   1,   1,
+parent_grid_ratio =   1,   1,
+i_parent_start    =   1,  ISTART, 
+j_parent_start    =   1,  JSTART, 
+s_we              =   1,   1, 
+e_we              =  EdgeNum_WE
+s_sn              =   1,   1, 
+e_sn              =  EdgeNum_SN
+geog_data_res     = '30s','30s'
+dx        = dx_WE,
+dy        = dy_SN,
+map_proj  = 'lambert',
+ref_lat   = RefLat,
+ref_lon   = RefLon,
+truelat1  =  True_Lat1,
+truelat2  =  True_Lat2,
+stand_lon =  StandLon,
+geog_data_path = 'GeogDataPath'
+/
+
+&ungrib
+out_format = 'WPS',
+prefix     ='SST',
+/
+
+&metgrid
+fg_name         = "2D", "3D",  "SST"
+constants_name  = ''
+ipf_msa         = 2,
+io_form_metgrid = 2,
+opt_output_from_metgrid_path = './',
+opt_metgrid_tbl_path         = './',
+/
+
+&mod_levs
+press_pa = 100000 ,  97500 ,
+            95000 ,  92500 ,
+            90000 ,  87500 ,
+            85000 ,  82500 ,
+            80000 ,  77500 ,
+            75000 ,  70000 ,
+            65000 ,  60000 ,
+            55000 ,  50000 ,
+            45000 ,  40000 ,
+            35000 ,  30000 ,
+            25000 ,  22500 ,
+            20000 ,  17500 ,
+            15000 ,  12500 ,
+            10000 ,   7000 ,
+             5000 ,   3000 ,
+             2000 ,   1000
+/
+
+&cwrf
+fname="floc0101.dat_cut","floc0201.dat_cut","floc0102.dat_cut","floc0202.dat_cut"
+lcc="domvtype_usgs24.dat_cut"
+maskfile = "watermsk_usgs24.dat_cut"
+/

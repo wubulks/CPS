@@ -1,0 +1,10 @@
+CFSV2数据(2011.04.01-2025.04.01),由成硕于2025.07下载，下载脚本在/stu02/chengs24/CFSV2/operational-9-month-forecast/forecastingdownload.py(noaa官网)和/stu02/chengs24/CFSV2/operational-9-month-forecast/amazonforecastdownload.py(亚马逊镜像)
+2011-2015年会缺少第一个时刻的地面场数据，例如陆面的第一个数据是flxf{year}040106.01.{year}040100，气压的数据是pgbf{year}040100.01.{year}040100；参考张焓师兄的建议，2011-2015年的开始预报时间统一选择040200.01.{year}040100
+#官网：
+地址1. https://www.ncei.noaa.gov/data/climate-forecast-system/access/operational-9-month-forecast/(noaa官网,部分数据缺少)
+地址2. https://noaa-cfs-pds.s3.amazonaws.com/index.html(亚马逊镜像,最新数据在这里下载比较快速)
+检查数据完整性代码：check_pressure_missdata.py (气压场) check_flux_missdata.py(地面场)
+
+
+###
+030100:2012年缺少030100起报的所有数据,以030200为初始场起报,同时2013-2015缺少第一个时刻的地面场数据。
