@@ -1,5 +1,7 @@
 # CRESM Preprocessing System (CPS)
-> Version: **v1.2.2**
+## Version
+
+Current stable release: **v1.0.0**
 
 [![License: GPL](https://img.shields.io/badge/License-GPL-blue.svg)](#license)
 [![Platform: Linux](https://img.shields.io/badge/Platform-Linux-success.svg)](#requirements)
