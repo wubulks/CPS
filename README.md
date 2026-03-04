@@ -98,56 +98,10 @@ Case/
 
 ---
 
-## Requirements
+## Changelog
 
-### Operating system
-
-- Linux
-- Ubuntu 20.04+ recommended
-
-### Hardware
-
-- CPU: 48 cores or more
-- Memory: 100 GB RAM
-- Disk: at least 100 GB free space
-
-### System dependencies
-
-Please make sure the following tools and libraries are available:
-
-- Intel Fortran
-- Intel MPI
-- NetCDF-C / NetCDF-Fortran
-- HDF5
-- NCO
-- CDO
-- NCL
-
-Common commands that should work directly in shell:
-
-- `mpirun`
-- `ncdump`
-- `ncl`
-
-### Python dependencies
-
-- Python >= 3.9
-
-Main Python packages:
-
-- `numpy`
-- `pandas`
-- `matplotlib`
-- `cartopy`
-- `Pillow`
-- `geopandas`
-- `fiona`
-- `esmpy`
-- `esmf`
-- `xesmf`
-- `pyhdf`
-- `pyparsing`
-- `python-dateutil`
+### v1.2.2
+- Initial public release
 
 ---
 
