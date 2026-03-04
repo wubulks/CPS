@@ -20,8 +20,8 @@ Author        : Omarjan
 Institution   : School of Atmospheric Sciences, Sun Yat-sen University (SYSU)
 
 Created       : 2025-05-25
-Last Modified : 2026-01-21
-Version       : 1.2.0
+Last Modified : 2026-03-04
+Version       : 1.2.2
 
 Conda Environments Required:
     - cresm     : /home/wumej22/anaconda3/envs/cresm
