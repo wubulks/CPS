@@ -253,14 +253,18 @@ def First_StaticData(casecfg, envcfg, gridname):
                 Tools.Link(geo_em_veg_path, './geo_em.d01.nc')
                 
                 # Run First_StaticData/LAI/Regrid2CWRF.py
+                # syears = StartTime.year
+                # eyears = EndTime.year
+                syears = 2001  # Hardcoded to cover all MODIS data
+                eyears = 2020  # Hardcoded to cover all MODIS data
                 log_file = f'{CaseOutputPath}/{gridname}/Log/log.LAI.WMEJ'
                 # cmd = f'conda run -n {xesmfenv} --no-capture-output python -u Regrid2CWRF.py '
-                # cmd +=f' -SY {StartTime.year} -EY {EndTime.year} -DX {dx_WE} -DY {dy_SN} '
+                # cmd +=f' -SY {syears} -EY {eyears} -DX {dx_WE} -DY {dy_SN} '
                 # cmd +=f' -RefLat {RefLat} -RefLon {RefLon} -TrueLat1 {True_Lat1} -TrueLat2 {True_Lat2} '
                 # cmd +=f' -CPU {CWRFCoreNum} -NCO {NCOPath} -CDO {CDOPath} > {log_file} 2>&1 '
                 """New script with parallel"""
                 cmd = f'conda run -n {xesmfenv} --no-capture-output python -u Regrid2CWRF_Parallel.py '
-                cmd +=f' -sy {StartTime.year} -ey {EndTime.year} -dx {dx_WE} -dy {dy_SN} '
+                cmd +=f' -sy {syears} -ey {eyears} -dx {dx_WE} -dy {dy_SN} '
                 cmd +=f' -reflat {RefLat} -reflon {RefLon} -truelat1 {True_Lat1} -truelat2 {True_Lat2} '
                 cmd +=f' -cpu {CWRFCoreNum} > {log_file} 2>&1 '
                 Tools.Run_CMD(cmd, "Regrid CoLM LAI data to CWRF grid")
