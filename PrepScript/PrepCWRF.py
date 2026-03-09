@@ -73,7 +73,7 @@ def First_StaticData(casecfg, envcfg, gridname):
     CWPSNMLPath = f'{CaseOutputPath}/{gridname}/NMLS/namelist.cwps.{gridname}'
     CWRFNMLPath = f'{CaseOutputPath}/{gridname}/NMLS/namelist.cwrf.{gridname}'
     maxmin_wgs = Tools.Get_Area_MaxMin_Coords(casecfg, gridname)
-    SinGridList = Tools.Build_SinGridList_From_MaxMinWGS(maxmin_wgs, Expand_Deg = 1.0, Return_String = True)
+    SinGridList = Tools.Build_SinGridList_From_MaxMinWGS(maxmin_wgs, Expand_Deg = 2.0, Return_String = True)
     chaomodisenv = envcfg.get('Environment', 'CONDA_CHAO')
     SYS_CWRF = envcfg.get('Environment', 'SYS_CWRF')
 
@@ -170,7 +170,7 @@ def First_StaticData(casecfg, envcfg, gridname):
             Tools.Run_CMD(cmd, "Run MODIS2CWRF.py")
 
             # Check FVC files
-            FVCPath = f'{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/FVC/modis_{syears}*_FVC_daily.nc'
+            FVCPath = f'{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/FVC/modis_*_FVC_daily.nc'
             FVCFiles = glob.glob(FVCPath)
             if len(FVCFiles) == 0:
                 logger.error(f'FVC files not found in {FVCFiles}')
@@ -221,7 +221,7 @@ def First_StaticData(casecfg, envcfg, gridname):
             os.chdir(old_path)
         else:
             logger.info(f'{Consts.S4}==========> Skip FVC <==========')
-            logger.info(f'{Consts.S4}-> MODIS FVC Path: {CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/FVC/modis_{StartTime.year}*_FVC_daily.nc')
+            logger.info(f'{Consts.S4}-> MODIS FVC Path: {CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/FVC/modis_*_FVC_daily.nc')
             geo_em_veg_path = f'{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/GeogPostProcess/geo_em.d01_veg.nc'
             if not Tools.File_Exist(geo_em_veg_path, level='warning'):
                 geo_em_veg_path_ = f'{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/Geog_{gridname}/geo_em.d01_veg.nc'
@@ -395,21 +395,26 @@ def First_StaticData(casecfg, envcfg, gridname):
             Tools.Link(geo_em_veg_path, './geo_em.d01.nc')
             
             # Run First_StaticData/IGBP/MODIS2CWRF.py
+            # syears = StartTime.year
+            # eyears = EndTime.year
+            syears = 2000  # Hardcoded to cover all MODIS data
+            eyears = 2023  # Hardcoded to cover all MODIS data
             log_file = f'{CaseOutputPath}/{gridname}/Log/log.IGBP'
-            cmd = f'conda run -n {chaomodisenv} --no-capture-output python -u MODIS2CWRF.py -hvs "{SinGridList}" -YS {StartTime.year} -YE {EndTime.year} > {log_file} 2>&1'
+            cmd = f'conda run -n {chaomodisenv} --no-capture-output python -u MODIS2CWRF.py -hvs "{SinGridList}" -YS {syears} -YE {eyears} > {log_file} 2>&1'
             Tools.Run_CMD(cmd, "Run MODIS2CWRF.py")
             logger.info(f'{Consts.S4}✓  Create IGBP finished!')
         else:
             logger.info(f'{Consts.S4}==========> Skip IGBP <==========')
         
         # Check IGBP files
-        IGBPPath = f'{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/IGBP/modis_{StartTime.year}*_IGBP_daily.nc'
-        IGBPPath = glob.glob(IGBPPath)
-        if len(IGBPPath) == 0:
+        IGBPPath = f'{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/IGBP/modis_*_IGBP_daily.nc'
+        IGBPFiles = glob.glob(IGBPPath)
+        IGBPPath = IGBPFiles[0]
+        if len(IGBPFiles) == 0:
             logger.warning(f'{Consts.S4}IGBP files not found in {IGBPPath}')
             logger.warning(f'{Consts.S4}Please check the MODIS2CWRF.py')
         else:
-            IGBPPath = IGBPPath[0]
+            IGBPPath = IGBPFiles[0]
             if not Tools.File_Exist(IGBPPath, level='warning'):
                 logger.warning(f'{Consts.S4}Please check the MODIS2CWRF.py')
         logger.info(f'{Consts.S4}-> MODIS IGBP Path: {IGBPPath}')

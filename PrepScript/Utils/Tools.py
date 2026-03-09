@@ -117,10 +117,12 @@ def File_Exist(filepath, level=None, count=None):
     检查文件是否存在，支持通配符，并可选检查匹配到的文件总数。
 
     Args:
-        filepath (str or list): 文件路径或包含通配符的模式.
+        filepath (str | os.PathLike | list[str | os.PathLike]):
+            文件路径、Path对象，或它们组成的列表。
         level (str): 报错级别 ("error", "warning", "info")。
         count (int, optional): 期望匹配到的文件总数。如果匹配数不符，将触发警告/错误。
     """
+
     def _Handle_Error(msg):
         if level == "error":
             logger.error(msg)
@@ -130,13 +132,18 @@ def File_Exist(filepath, level=None, count=None):
         else:
             logger.debug(f"{Consts.S4}{msg}")
 
+    def _to_path_str(p):
+        if isinstance(p, (str, os.PathLike)):
+            return os.fspath(p)   # 可同时支持 str 和 Path
+        raise TypeError(f"Each filepath must be str or os.PathLike, got {type(p)}")
+
     # 1. 统一输入为列表
-    if isinstance(filepath, str):
-        paths_to_check = [filepath]
+    if isinstance(filepath, (str, os.PathLike)):
+        paths_to_check = [_to_path_str(filepath)]
     elif isinstance(filepath, list):
-        paths_to_check = filepath
+        paths_to_check = [_to_path_str(p) for p in filepath]
     else:
-        raise TypeError("filepath must be str or list")
+        raise TypeError("filepath must be str, os.PathLike, or list")
 
     if not paths_to_check:
         _Handle_Error("File list is empty.")
@@ -152,14 +159,14 @@ def File_Exist(filepath, level=None, count=None):
             _Handle_Error(f"File or Pattern not found: {p}")
             return False
 
-        # 检查项 B: 可选的文件总数检查 (仅在设置了 count 时生效)
-        if count is not None:
-            if actual_count != count:
-                _Handle_Error(
-                    f"File count mismatch for pattern [{p}]: "
-                    f"Expected {count}, but found {actual_count}."
-                )
-                return False
+        # 检查项 B: 可选的文件总数检查
+        if count is not None and actual_count != count:
+            _Handle_Error(
+                f"File count mismatch for pattern [{p}]: "
+                f"Expected {count}, but found {actual_count}."
+            )
+            return False
+
         # 日志记录
         if "*" in p or "?" in p:
             logger.debug(f"Pattern matched {actual_count} files: {p}")
@@ -167,7 +174,6 @@ def File_Exist(filepath, level=None, count=None):
             logger.debug(f"File exists: {p}")
 
     return True
-
 
 def Link(src_in, dst_in, force=True):
     """
@@ -510,6 +516,11 @@ def Build_SinGridList_From_MaxMinWGS(maxmin_wgs, Expand_Deg=2, Return_String=Fal
     """
 
     import math
+
+    logger.debug(f"Original WGS bbox: {maxmin_wgs}")
+    logger.debug(f"Expanded by {Expand_Deg} degrees: ")
+    for key, value in maxmin_wgs.items():
+        logger.debug(f"  {key}: {value}")
 
     # ---- Read + expand ----
     min_lon = float(maxmin_wgs["min_lon"]) - Expand_Deg

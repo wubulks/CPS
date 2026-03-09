@@ -1,0 +1,108 @@
+03-06 22:55:03 | INFO    |  
+03-06 22:55:03 | INFO    |        *************************************
+03-06 22:55:03 | INFO    |         *** CRESM Preprocessing System ***  
+03-06 22:55:03 | INFO    |        *************************************
+
+
+03-06 22:55:03 | INFO    |         Case Name: Yangtze_C_6km_MPI 
+
+
+03-06 22:55:03 | INFO    |  Reading configuration file...
+03-06 22:55:04 | INFO    |  Making directory...
+03-06 22:55:04 | INFO    |      Directories for case < Yangtze_C_6km_MPI > created.
+
+
+03-06 22:55:04 | INFO    |  Modifying namelist files...
+03-06 22:55:04 | INFO    |      -> Modified CWPS namelist file: /hydata01/wumej22/CPS/Case/Yangtze_C_6km_MPI/NMLS/namelist.cwps.Yangtze_C_6km_MPI
+03-06 22:55:04 | INFO    |      -> Modified CWRF namelist file: /hydata01/wumej22/CPS/Case/Yangtze_C_6km_MPI/NMLS/namelist.cwrf.Yangtze_C_6km_MPI
+03-06 22:55:04 | INFO    |      -> Modified CRESM namelist file: /hydata01/wumej22/CPS/Case/Yangtze_C_6km_MPI/NMLS/namelist.cresm.Yangtze_C_6km_MPI
+03-06 22:55:04 | INFO    |      -> Modified CF namelist file: /hydata01/wumej22/CPS/Case/Yangtze_C_6km_MPI/NMLS/namelist.cf.Yangtze_C_6km_MPI
+03-06 22:55:04 | INFO    |      -> Modified CoLM namelist file: /hydata01/wumej22/CPS/Case/Yangtze_C_6km_MPI/NMLS/unstructured_cwrf.colm.Yangtze_C_6km_MPI.icbc
+03-06 22:55:04 | INFO    |      -> Modified CoLM namelist file: /hydata01/wumej22/CPS/Case/Yangtze_C_6km_MPI/NMLS/unstructured_cwrf.colm.Yangtze_C_6km_MPI.run
+03-06 22:55:04 | INFO    |      ✓  Modify namelist files finished!
+
+
+03-06 22:55:04 | INFO    |  [PrepCWRF] *** Show case Domain Info ***
+03-06 22:55:04 | INFO    |      ==========> Skip Domain Plot <==========
+03-06 22:55:04 | INFO    |      !!! Skip the whole process !!!
+03-06 22:55:04 | INFO    |      ◉  Show Domain Complete!
+
+
+03-06 22:55:04 | INFO    |  [PrepCWRF] *** Using Existing Geog Data ***
+03-06 22:55:04 | INFO    |      -> Exits Geog ID: X[316]_Y[217]_dx[6000.000000]_dy[6000.000000]_lat[29.500000]_lon[114.300000]_tl1[27.000000]_tl2[33.000000]_slon[114.300000]_bw[15]_lk[0.300000]
+03-06 22:55:04 | INFO    |      -> New Case Geog ID: X[316]_Y[217]_dx[6000.000000]_dy[6000.000000]_lat[29.500000]_lon[114.300000]_tl1[27.000000]_tl2[33.000000]_slon[114.300000]_bw[15]_lk[0.300000]
+03-06 22:55:04 | INFO    |      -> Geog ID is match, continue to copy GeogGatherPath
+03-06 22:55:04 | INFO    |      ==========> Skip Geogrid <==========
+03-06 22:55:04 | INFO    |      ==========> Skip FVC <==========
+03-06 22:55:04 | INFO    |      ==========> Skip LAI <==========
+03-06 22:55:04 | INFO    |      ==========> Skip SAI <==========
+03-06 22:55:04 | INFO    |      ==========> Skip IGBP <==========
+03-06 22:55:04 | INFO    |      ==========> Skip Collect GeogData <==========
+03-06 22:55:04 | INFO    |      -> GeogDataPath: /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
+03-06 22:55:04 | INFO    |      -> Copy GeogDataPath to /hydata01/wumej22/CPS/Case/Yangtze_C_6km_MPI/PrepCWRF/First_StaticData/Geog_Yangtze_C_6km_MPI
+03-06 22:55:04 | INFO    |      -> Copy GeogDataPath to /hydata01/wumej22/CPS/Case/Yangtze_C_6km_MPI/PrepCWRF/Yangtze_C_6km_MPI/Geog_Yangtze_C_6km_MPI
+03-06 22:55:04 | INFO    |      ◉  Copy Geog Gather Data finished!
+
+
+03-06 22:55:04 | INFO    |  [PrepCWRF] *** Making ICBC ***
+03-06 22:55:04 | INFO    |  The steps are: ●  Ungrib 2D -> Ungrib SST -> Ungrib 3D -> mod_levs -> Metgrid -> SST_avg -> Real -> Vbs  ●
+
+03-06 22:55:04 | WARNING |      The time span is less than 30 days, will not perform slicing.
+03-06 22:55:04 | WARNING |      Please check the Enable_TimeChunk flag in the configuration file.
+03-06 22:55:04 | INFO    |      !!! Processing the whole period in one go !!!
+03-06 22:55:04 | INFO    |          --> It may take 16 minutes <--
+
+03-06 22:55:04 | INFO    |      ==========> Ungrid 2024-01-01_2024-01-05 <==========
+03-06 22:55:14 | ERROR   |  Command failed with exit code 1: conda run -n cresm --no-capture-output python -u ungrib_nc2im.py --forcename MPI-ESM1-2-HR_ssp585 --startdate 2024-01-01 --enddate 2024-01-05 --inputdir ./DATA --outputdir ./ --nprocs 16 -env ungrid --forcinfopath /hydata01/wumej22/CPS/PrepScript/Forcing/NetCDF_Forcing_Config/Forc_Info.MPI-ESM1-2-HR_ssp585.ini > /hydata01/wumej22/CPS/Case/Yangtze_C_6km_MPI/Log/log.ungrib_2D.2024-01-01_2024-01-05 2>&1
+03-06 22:55:14 | ERROR   |  Last few lines from redirected log file:
+03-06 22:55:14 | ERROR   |      
+03-06 22:55:14 | ERROR   |      Configuration:
+03-06 22:55:14 | ERROR   |        Forcing dataset    : MPI-ESM1-2-HR_ssp585
+03-06 22:55:14 | ERROR   |        Start date         : 2024-01-01
+03-06 22:55:14 | ERROR   |        End date           : 2024-01-05
+03-06 22:55:14 | ERROR   |        Input directory    : /hydata01/wumej22/CPS/Case/Yangtze_C_6km_MPI/PrepCWRF/Second_ICBC/UngribMetgrid_2024-01-01_2024-01-05/DATA
+03-06 22:55:14 | ERROR   |        Output directory   : /hydata01/wumej22/CPS/Case/Yangtze_C_6km_MPI/PrepCWRF/Second_ICBC/UngribMetgrid_2024-01-01_2024-01-05
+03-06 22:55:14 | ERROR   |        Number of processes: 16
+03-06 22:55:14 | ERROR   |        Conda environment  : ungrid
+03-06 22:55:14 | ERROR   |        Current directory  : /hydata01/wumej22/CPS/Case/Yangtze_C_6km_MPI/PrepCWRF/Second_ICBC/UngribMetgrid_2024-01-01_2024-01-05
+03-06 22:55:14 | ERROR   |        Forcing info file  : /hydata01/wumej22/CPS/PrepScript/Forcing/NetCDF_Forcing_Config/Forc_Info.MPI-ESM1-2-HR_ssp585.ini
+03-06 22:55:14 | ERROR   |      
+03-06 22:55:14 | ERROR   |      Starting conversion for forcing dataset: MPI-ESM1-2-HR_ssp585
+03-06 22:55:14 | ERROR   |      joblib.externals.loky.process_executor._RemoteTraceback: 
+03-06 22:55:14 | ERROR   |      """
+03-06 22:55:14 | ERROR   |      Traceback (most recent call last):
+03-06 22:55:14 | ERROR   |        File "/stu01/wumej22/Anaconda3/envs/cresm/lib/python3.9/site-packages/joblib/externals/loky/process_executor.py", line 490, in _process_worker
+03-06 22:55:14 | ERROR   |          r = call_item()
+03-06 22:55:14 | ERROR   |        File "/stu01/wumej22/Anaconda3/envs/cresm/lib/python3.9/site-packages/joblib/externals/loky/process_executor.py", line 291, in __call__
+03-06 22:55:14 | ERROR   |          return self.fn(*self.args, **self.kwargs)
+03-06 22:55:14 | ERROR   |        File "/stu01/wumej22/Anaconda3/envs/cresm/lib/python3.9/site-packages/joblib/parallel.py", line 606, in __call__
+03-06 22:55:14 | ERROR   |          return [func(*args, **kwargs) for func, args, kwargs in self.items]
+03-06 22:55:14 | ERROR   |        File "/stu01/wumej22/Anaconda3/envs/cresm/lib/python3.9/site-packages/joblib/parallel.py", line 606, in <listcomp>
+03-06 22:55:14 | ERROR   |          return [func(*args, **kwargs) for func, args, kwargs in self.items]
+03-06 22:55:14 | ERROR   |        File "/hydata01/wumej22/CPS/Case/Yangtze_C_6km_MPI/PrepCWRF/Second_ICBC/UngribMetgrid_2024-01-01_2024-01-05/ungrib_nc2im.py", line 165, in run_define_at_pressure_level
+03-06 22:55:14 | ERROR   |          subprocess.run(cmd, shell=True, stdout=log, stderr=log, check=True, env=env, cwd=work_root)
+03-06 22:55:14 | ERROR   |        File "/stu01/wumej22/Anaconda3/envs/cresm/lib/python3.9/subprocess.py", line 528, in run
+03-06 22:55:14 | ERROR   |          raise CalledProcessError(retcode, process.args,
+03-06 22:55:14 | ERROR   |      subprocess.CalledProcessError: Command 'conda run -n ungrid --no-capture-output python -u /hydata01/wumej22/CPS/Case/Yangtze_C_6km_MPI/PrepCWRF/Second_ICBC/UngribMetgrid_2024-01-01_2024-01-05/convert_define_at_pressure_level.py -Y 2024 -M 1 -D 4 -indir /hydata01/wumej22/CPS/Case/Yangtze_C_6km_MPI/PrepCWRF/Second_ICBC/UngribMetgrid_2024-01-01_2024-01-05/DATA -outdir /hydata01/wumej22/CPS/Case/Yangtze_C_6km_MPI/PrepCWRF/Second_ICBC/UngribMetgrid_2024-01-01_2024-01-05 -forcinfo /hydata01/wumej22/CPS/PrepScript/Forcing/NetCDF_Forcing_Config/Forc_Info.MPI-ESM1-2-HR_ssp585.ini' returned non-zero exit status 1.
+03-06 22:55:14 | ERROR   |      """
+03-06 22:55:14 | ERROR   |      
+03-06 22:55:14 | ERROR   |      The above exception was the direct cause of the following exception:
+03-06 22:55:14 | ERROR   |      
+03-06 22:55:14 | ERROR   |      Traceback (most recent call last):
+03-06 22:55:14 | ERROR   |        File "/hydata01/wumej22/CPS/Case/Yangtze_C_6km_MPI/PrepCWRF/Second_ICBC/UngribMetgrid_2024-01-01_2024-01-05/ungrib_nc2im.py", line 200, in <module>
+03-06 22:55:14 | ERROR   |          results = Parallel(n_jobs=n_jobs, backend="loky", verbose=0)(
+03-06 22:55:14 | ERROR   |        File "/stu01/wumej22/Anaconda3/envs/cresm/lib/python3.9/site-packages/joblib/parallel.py", line 2071, in __call__
+03-06 22:55:14 | ERROR   |          return output if self.return_generator else list(output)
+03-06 22:55:14 | ERROR   |        File "/stu01/wumej22/Anaconda3/envs/cresm/lib/python3.9/site-packages/joblib/parallel.py", line 1681, in _get_outputs
+03-06 22:55:14 | ERROR   |          yield from self._retrieve()
+03-06 22:55:14 | ERROR   |        File "/stu01/wumej22/Anaconda3/envs/cresm/lib/python3.9/site-packages/joblib/parallel.py", line 1783, in _retrieve
+03-06 22:55:14 | ERROR   |          self._raise_error_fast()
+03-06 22:55:14 | ERROR   |        File "/stu01/wumej22/Anaconda3/envs/cresm/lib/python3.9/site-packages/joblib/parallel.py", line 1858, in _raise_error_fast
+03-06 22:55:14 | ERROR   |          error_job.get_result(self.timeout)
+03-06 22:55:14 | ERROR   |        File "/stu01/wumej22/Anaconda3/envs/cresm/lib/python3.9/site-packages/joblib/parallel.py", line 757, in get_result
+03-06 22:55:14 | ERROR   |          return self._return_or_raise()
+03-06 22:55:14 | ERROR   |        File "/stu01/wumej22/Anaconda3/envs/cresm/lib/python3.9/site-packages/joblib/parallel.py", line 772, in _return_or_raise
+03-06 22:55:14 | ERROR   |          raise self._result
+03-06 22:55:14 | ERROR   |      subprocess.CalledProcessError: Command 'conda run -n ungrid --no-capture-output python -u /hydata01/wumej22/CPS/Case/Yangtze_C_6km_MPI/PrepCWRF/Second_ICBC/UngribMetgrid_2024-01-01_2024-01-05/convert_define_at_pressure_level.py -Y 2024 -M 1 -D 4 -indir /hydata01/wumej22/CPS/Case/Yangtze_C_6km_MPI/PrepCWRF/Second_ICBC/UngribMetgrid_2024-01-01_2024-01-05/DATA -outdir /hydata01/wumej22/CPS/Case/Yangtze_C_6km_MPI/PrepCWRF/Second_ICBC/UngribMetgrid_2024-01-01_2024-01-05 -forcinfo /hydata01/wumej22/CPS/PrepScript/Forcing/NetCDF_Forcing_Config/Forc_Info.MPI-ESM1-2-HR_ssp585.ini' returned non-zero exit status 1.
+03-06 22:55:14 | ERROR   |      ERROR conda.cli.main_run:execute(127): `conda run python -u ungrib_nc2im.py --forcename MPI-ESM1-2-HR_ssp585 --startdate 2024-01-01 --enddate 2024-01-05 --inputdir ./DATA --outputdir ./ --nprocs 16 -env ungrid --forcinfopath /hydata01/wumej22/CPS/PrepScript/Forcing/NetCDF_Forcing_Config/Forc_Info.MPI-ESM1-2-HR_ssp585.ini` failed. (See above for error)
+03-06 22:55:14 | ERROR   |  Error at: /hydata01/wumej22/CPS/Case/Yangtze_C_6km_MPI/PrepCWRF/Second_ICBC/UngribMetgrid_2024-01-01_2024-01-05
