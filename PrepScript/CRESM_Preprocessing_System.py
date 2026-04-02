@@ -130,7 +130,7 @@ def Modify_Config(casecfg, gridname, year=None):
     key = 'Time'
     formatted_key = key.ljust(17)
     print(f"{Consts.S6}{formatted_key}: {start_time_str} - {end_time_str}\n")
-    new_start_time = start_time.replace(year=year-1, month=12, day=1, hour=0, minute=0, second=0)
+    new_start_time = start_time.replace(year=year, month=1, day=1, hour=0, minute=0, second=0)
     new_end_time = end_time.replace(year=year+1, month=1, day=3, hour=0, minute=0, second=0)
     casecfg.set(new_section, 'StartTime', new_start_time.strftime('%Y-%m-%d_%H:%M:%S'))
     casecfg.set(new_section, 'EndTime', new_end_time.strftime('%Y-%m-%d_%H:%M:%S'))
@@ -953,6 +953,12 @@ def Gather_Prepare_Data(casecfg, envcfg, gridname):
                 Tools.Run_CMD(cmd, "Remove old wrfinput file")
                 Tools.Copy(wrfinput, f'./ICBC_{gridname}/wrfinput_d01')
             
+            wrfinput_colm = f'{CaseOutputPath}/{gridname}/PrepCWRF/{gridname}/wrfinput_d01.colm'
+            if Tools.File_Exist(wrfinput_colm, level='warning'):
+                cmd = f'rm -f ./ICBC_{gridname}/wrfinput_d01.colm'
+                Tools.Run_CMD(cmd, "Remove old wrfinput file")
+                Tools.Copy(wrfinput_colm, f'./ICBC_{gridname}/wrfinput_d01.colm')
+            
             wrfbdy = f'{CaseOutputPath}/{gridname}/PrepCWRF/{gridname}/wrfbdy_d01'
             if Tools.File_Exist(wrfbdy, level='warning'):
                 cmd = f'rm -f ./ICBC_{gridname}/wrfbdy_d01'
@@ -1147,7 +1153,7 @@ def Collect_Yearly_Data(casecfg, envcfg, gridname):
     logger.info(f'Found {len(casesdir)} cases with prefix <{gridname}>')
 
     for case in casesdir:
-        # ✅ 必须放到这里：每个 case 单独一批任务，避免累积重复执行
+        # 必须放到这里：每个 case 单独一批任务，避免累积重复执行
         tasks = []
         # 记录需要做“目录内部递归改名”的目标目录（只对目录做）
         rename_targets = []
@@ -1224,7 +1230,7 @@ def Collect_Yearly_Data(casecfg, envcfg, gridname):
                     logger.info(f"Skipping existing file: {dst}")
 
         # year suffix files
-        icbc_items = ['wrfinput_d01', 'wrfbdy_d01', 'wrflowinp_d01', 'wrfveg_d01', 'wrfsst_d01']
+        icbc_items = ['wrfinput_d01', 'wrfinput_d01.colm', 'wrfbdy_d01', 'wrflowinp_d01', 'wrfveg_d01', 'wrfsst_d01']
         for filename in icbc_items:
             file = f'{CaseOutputPath}/{casename}/{casename}/ICBC_{casename}/{filename}'
             if not Tools.File_Exist(file, level='warning'):
@@ -1233,15 +1239,15 @@ def Collect_Yearly_Data(casecfg, envcfg, gridname):
             cmd = f'rsync -a "{file}" "{newfile}"'
             tasks.append((cmd, f"Copy {file} to {newfile}"))
 
-        # ✅ 并行执行复制任务（每个 case 一次）
+        # 并行执行复制任务（每个 case 一次）
         Tools.Run_Parallel(Tools.Run_CMD, tasks, CoreNum, "Collect Case")
 
-        # ✅ 复制完成后：把目录内部所有 “casename” 递归改成 “gridname”
+        # 复制完成后：把目录内部所有 “casename” 递归改成 “gridname”
         # 只处理 rename_targets（那些目录型 grid_item）
         for d in rename_targets:
             Tools.rename_tree_tokens(d, casename, gridname, logger=logger)
        
-        # ✅ 针对特定的 unstructured nml 文件做全局内容替换
+        # 针对特定的 unstructured nml 文件做全局内容替换
         specific_nml = os.path.join(target_dir, f'Grid_{gridname}', f'unstructured_cwrf_{gridname}.nml')
         
         if os.path.exists(specific_nml):

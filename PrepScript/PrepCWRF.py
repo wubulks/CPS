@@ -103,7 +103,6 @@ def First_StaticData(casecfg, envcfg, gridname):
             cmd = f'mpirun -n {CWRFCoreNum} ./geogrid.exe > {log_file} 2>&1'
             Tools.Run_CMD(cmd, "Run geogrid.exe", env=SYS_CWRF)
 
-
             # link CorrectGeoEM.py
             cmd = f'/usr/bin/ln -sf  {ProcessScriptPath}/PrepCWRF/CorrectGeoEM.py .'
             Tools.Run_CMD(cmd, "Link CorrectGeoEM.py")
@@ -801,7 +800,6 @@ def Gather_CWRF_Output(casecfg, envcfg, gridname):
         Tools.Link(f"{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/Geog_{gridname}/MODIS2CWRF_SBC_d01.nc", ".")
         Tools.Copy(f"{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/Geog_{gridname}/geo_em.d01_veg.nc", "./geo_em.d01.nc")
         Tools.Copy(wrfinput[0], '.')
-
 
         #- Post processing
         # cmd = rf'{NCLPath} chanlu.ncl suffix=\"d01\" > {log_file} 2>&1'
