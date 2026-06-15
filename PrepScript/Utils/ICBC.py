@@ -19,7 +19,7 @@ Description   : Handles the data preparation workflow for the CWRF model's
 Author        : Omarjan
 Institution   : School of Atmospheric Sciences, Sun Yat-sen University (SYSU)
 Created       : 2025-05-25
-Last Modified : 2026-01-21
+Last Modified : 2026-06-15
 ===============================================================================
 """
 
@@ -48,6 +48,7 @@ def Ungrib_CFSV2(casecfg, envcfg, gridname, start_time, end_time):
     Forc_3D_Path = envcfg.get(ForcingDataName, 'Forc_3D_Path')
     Forc_SST_Path = envcfg.get(ForcingDataName, 'Forc_SST_Path')
     SYS_CWRF = envcfg.get('Environment', 'SYS_CWRF')
+    DataCalender = envcfg.get(ForcingDataName, 'DataCalender')
     
     prefix = ["2D","3D","SST"]
     
@@ -123,7 +124,8 @@ def Ungrib_CFSV2(casecfg, envcfg, gridname, start_time, end_time):
         cmd = f'./ungrib.exe > {log_file} 2>&1'
         Tools.Run_CMD(cmd, "Run ungrib.exe", env=SYS_CWRF)
         os.system(f'mv ungrib.log ungrib_2D.log')
-        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[0], 6, start_time, end_time)
+        timeseries = Tools.Generate_Timeseries(start_time, end_time, DataCalender, freq='6H')
+        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[0], timeseries)
         logger.info(f'{Consts.S4}✓  {time_str}: Ungrib 2D')
         
         #ungrib SST files
@@ -138,7 +140,7 @@ def Ungrib_CFSV2(casecfg, envcfg, gridname, start_time, end_time):
         cmd = f'./ungrib.exe > {log_file} 2>&1'
         Tools.Run_CMD(cmd, "Run ungrib.exe", env=SYS_CWRF)
         os.system(f'mv ungrib.log ungrib_sst.log')
-        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[2], 6, start_time, end_time)
+        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[2], timeseries)
         logger.info(f'{Consts.S4}✓  {time_str}: Ungrib SST')
         
         # ungrib 3D files
@@ -154,7 +156,7 @@ def Ungrib_CFSV2(casecfg, envcfg, gridname, start_time, end_time):
         cmd = f'./ungrib.exe > {log_file} 2>&1'
         Tools.Run_CMD(cmd, "Run ungrib.exe", env=SYS_CWRF)
         Tools.Run_CMD(f'mv ungrib.log ungrib_3D.log', "Rename ungrib log file")
-        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[1], 6, start_time, end_time)
+        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[1], timeseries)
         logger.info(f'    ✓  {time_str}: Ungrib 3D')
         
         #run mod_levs.exe
@@ -188,6 +190,8 @@ def Ungrib_ERA5(casecfg, envcfg, gridname, start_time, end_time):
     Forc_3D_Path = envcfg.get(ForcingDataName, 'Forc_3D_Path')
     Forc_SST_Path = envcfg.get(ForcingDataName, 'Forc_SST_Path')
     SYS_CWRF = envcfg.get('Environment', 'SYS_CWRF')
+    DataCalender = envcfg.get(ForcingDataName, 'DataCalender')
+
 
     prefix = ["2D","3D","SST"]
     
@@ -263,7 +267,8 @@ def Ungrib_ERA5(casecfg, envcfg, gridname, start_time, end_time):
         cmd = f'./ungrib.exe > {log_file} 2>&1'
         Tools.Run_CMD(cmd, "Run ungrib.exe", env=SYS_CWRF)
         Tools.Run_CMD(f'mv ungrib.log ungrib_2D.log', "Rename ungrib log file")
-        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[0], 6, start_time, end_time)
+        timeseries = Tools.Generate_Timeseries(start_time, end_time, DataCalender, freq='6H')
+        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[0], timeseries)
         logger.info(f'{Consts.S4}✓  {time_str}: Ungrib 2D')
         
         #ungrib SST files
@@ -279,7 +284,7 @@ def Ungrib_ERA5(casecfg, envcfg, gridname, start_time, end_time):
         cmd = f'./ungrib.exe > {log_file} 2>&1'
         Tools.Run_CMD(cmd, "Run ungrib.exe", env=SYS_CWRF)
         os.system(f'mv ungrib.log ungrib_sst.log')
-        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[2], 6, start_time, end_time)
+        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[2], timeseries)
         logger.info(f'{Consts.S4}✓  {time_str}: Ungrib SST')
 
         # ungrib 3D files
@@ -295,7 +300,7 @@ def Ungrib_ERA5(casecfg, envcfg, gridname, start_time, end_time):
         cmd = f'./ungrib.exe > {log_file} 2>&1'
         Tools.Run_CMD(cmd, "Run ungrib.exe", env=SYS_CWRF)
         os.system(f'mv ungrib.log ungrib_3D.log')
-        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[1], 6, start_time, end_time)
+        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[1], timeseries)
         logger.info(f'    ✓  {time_str}: Ungrib 3D')
         
         #run mod_levs.exe
@@ -329,6 +334,8 @@ def Ungrib_MPI_ESM1_2_HR_hist(casecfg, envcfg, gridname, start_time, end_time):
     CWRFCoreNum = casecfg.getint('PrepCWRF', 'CWRFCoreNum')
     cresmenv = envcfg.get('Environment', 'CONDA_CRESM')
     ungribenv = envcfg.get('Environment', 'CONDA_UNGRIB')
+    DataCalender = envcfg.get(ForcingDataName, 'DataCalender')
+
 
     # mkdir
     time_str = f'{start_time.year}-{start_time.month:02d}-{start_time.day:02d}_{end_time.year}-{end_time.month:02d}-{end_time.day:02d}'
@@ -493,11 +500,12 @@ def Ungrib_MPI_ESM1_2_HR_hist(casecfg, envcfg, gridname, start_time, end_time):
         cmd += f'--forcinfopath {Forc_Info} > {log_file} 2>&1'
         Tools.Run_CMD(cmd, "Run ungrib_nc2im.py")
         # os.system(f'mv ungrib.log ungrib_2D.log')
-        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[0], 6, start_time, end_time)
+        timeseries = Tools.Generate_Timeseries(start_time, end_time, DataCalender, freq='6H')
+        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[0], timeseries)
         logger.info(f'{Consts.S4}✓  {time_str}: Ungrib 2D')
-        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[1], 6, start_time, end_time)
+        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[1], timeseries)
         logger.info(f'    ✓  {time_str}: Ungrib 3D')
-        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[2], 6, start_time, end_time)
+        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[2], timeseries)
         logger.info(f'{Consts.S4}✓  {time_str}: Ungrib SST')
         logger.info(f'{Consts.S4}✓  {time_str}: mod_lev')
     else:
@@ -518,7 +526,7 @@ def Ungrib_MPI_ESM1_2_HR_ssp245(casecfg, envcfg, gridname, start_time, end_time)
     CWRFCoreNum = casecfg.getint('PrepCWRF', 'CWRFCoreNum')
     cresmenv = envcfg.get('Environment', 'CONDA_CRESM')
     ungribenv = envcfg.get('Environment', 'CONDA_UNGRIB')
-
+    DataCalender = envcfg.get(ForcingDataName, 'DataCalender')
     
     # mkdir
     time_str = f'{start_time.year}-{start_time.month:02d}-{start_time.day:02d}_{end_time.year}-{end_time.month:02d}-{end_time.day:02d}'
@@ -684,11 +692,12 @@ def Ungrib_MPI_ESM1_2_HR_ssp245(casecfg, envcfg, gridname, start_time, end_time)
         cmd += f'--forcinfopath {Forc_Info} > {log_file} 2>&1'
         Tools.Run_CMD(cmd, "Run ungrib_nc2im.py")
         # os.system(f'mv ungrib.log ungrib_2D.log')
-        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[0], 6, start_time, end_time)
+        timeseries = Tools.Generate_Timeseries(start_time, end_time, DataCalender, freq='6H')
+        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[0], timeseries)
         logger.info(f'{Consts.S4}✓  {time_str}: Ungrib 2D')
-        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[1], 6, start_time, end_time)
+        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[1], timeseries)
         logger.info(f'    ✓  {time_str}: Ungrib 3D')
-        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[2], 6, start_time, end_time)
+        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[2], timeseries)
         logger.info(f'{Consts.S4}✓  {time_str}: Ungrib SST')
         
         logger.info(f'{Consts.S4}✓  {time_str}: mod_lev')
@@ -710,7 +719,7 @@ def Ungrib_MPI_ESM1_2_HR_ssp585(casecfg, envcfg, gridname, start_time, end_time)
     CWRFCoreNum = casecfg.getint('PrepCWRF', 'CWRFCoreNum')
     cresmenv = envcfg.get('Environment', 'CONDA_CRESM')
     ungribenv = envcfg.get('Environment', 'CONDA_UNGRIB')
-
+    DataCalender = envcfg.get(ForcingDataName, 'DataCalender')
     
     # mkdir
     time_str = f'{start_time.year}-{start_time.month:02d}-{start_time.day:02d}_{end_time.year}-{end_time.month:02d}-{end_time.day:02d}'
@@ -876,13 +885,206 @@ def Ungrib_MPI_ESM1_2_HR_ssp585(casecfg, envcfg, gridname, start_time, end_time)
         cmd += f'--forcinfopath {Forc_Info} > {log_file} 2>&1'
         Tools.Run_CMD(cmd, "Run ungrib_nc2im.py")
         # os.system(f'mv ungrib.log ungrib_2D.log')
-        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[0], 6, start_time, end_time)
+        timeseries = Tools.Generate_Timeseries(start_time, end_time, DataCalender, freq='6H')
+        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[0], timeseries)
         logger.info(f'{Consts.S4}✓  {time_str}: Ungrib 2D')
-        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[1], 6, start_time, end_time)
+        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[1], timeseries)
         logger.info(f'    ✓  {time_str}: Ungrib 3D')
-        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[2], 6, start_time, end_time)
+        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[2], timeseries)
         logger.info(f'{Consts.S4}✓  {time_str}: Ungrib SST')
         
+        logger.info(f'{Consts.S4}✓  {time_str}: mod_lev')
+    else:
+        logger.info(f'{Consts.S4}==========> Skip Ungrib {time_str} <==========')
+
+    # removing temporary files
+    os.chdir(old_path)
+
+
+
+def Ungrib_CESM2_hist(casecfg, envcfg, gridname, start_time, end_time):
+    old_path = os.getcwd()
+    ForcingDataName = casecfg.get(gridname, 'ForcingDataName')
+    ForcingDataName = ForcingDataName.strip().lower()
+    CaseOutputPath = casecfg.get(gridname, 'CaseOutputPath')
+    Go_Ungrib = casecfg.getboolean('PrepCWRF', 'Go_Ungrib')
+    Forc_Info = envcfg.get(ForcingDataName, 'Forc_Info')
+    CWRFCoreNum = casecfg.getint('PrepCWRF', 'CWRFCoreNum')
+    cresmenv = envcfg.get('Environment', 'CONDA_CRESM')
+    ungribenv = envcfg.get('Environment', 'CONDA_UNGRIB')
+    ForcingName = envcfg.get(ForcingDataName, 'ForcingDataName')
+    DataCalender = envcfg.get(ForcingDataName, 'DataCalender')
+
+    # mkdir
+    time_str = f'{start_time.year}-{start_time.month:02d}-{start_time.day:02d}_{end_time.year}-{end_time.month:02d}-{end_time.day:02d}'
+    cmd = f'mkdir -p {CaseOutputPath}/{gridname}/PrepCWRF/Second_ICBC/UngribMetgrid_{time_str}'
+    Tools.Run_CMD(cmd, "Create directory UngribMetgrid")
+    cmd = f'mkdir -p {CaseOutputPath}/{gridname}/PrepCWRF/Second_ICBC/UngribMetgrid_{time_str}/DATA'
+    Tools.Run_CMD(cmd, "Create directory DATA")
+    
+    # cd to PrepCWRF/Second_ICBC/time_str
+    os.chdir(f'{CaseOutputPath}/{gridname}/PrepCWRF/Second_ICBC/UngribMetgrid_{time_str}')
+    prefix = ["2D","3D","SST"]
+    
+    #---------------------- Ungrid ----------------------
+    if Go_Ungrib:
+        logger.info(f'{Consts.S4}==========> Ungrid {time_str} <==========')
+
+        forcinfo = configparser.ConfigParser(inline_comment_prefixes=(';', '#'))
+        forcinfo.read(Forc_Info)
+        sections = forcinfo.sections()
+
+        # 数据目录（若无 BaseInfo/DataDir，就用 Forc_Info 所在目录）
+        if 'BaseInfo' not in sections:
+            raise ValueError("Forc_Info file must contain a [BaseInfo] section with DataDir specified.")
+
+        base_data_dir = forcinfo.get('BaseInfo', 'DataDir').strip()
+        fileindex = forcinfo.get('BaseInfo', 'FileIndex').strip()
+        datastart = pd.to_datetime(forcinfo.get('BaseInfo', 'DataStart').replace("_", " "), errors='raise')
+        dataend   = pd.to_datetime(forcinfo.get('BaseInfo', 'DataEnd').replace("_", " "), errors='raise')
+        # 统一把 start/end 转成 pandas Timestamp
+        ts_start = pd.Timestamp(start_time)
+        ts_end   = pd.Timestamp(end_time)
+
+        if ts_start < pd.Timestamp(datastart) or ts_end > pd.Timestamp(dataend):
+            raise ValueError(f"Requested time range {ts_start} to {ts_end} is out of bounds ({datastart} to {dataend}).")
+
+        fileindex_path = os.path.join(base_data_dir, fileindex)
+        Tools.File_Exist(fileindex_path, level='error')
+        Tools.File_Exist(base_data_dir, level='error')
+
+        # 读取文件索引
+        fileindex_df = pd.read_csv(fileindex_path)
+        
+        # 获取 BaseInfo 中的变量分组
+        var_groups = {}
+        for key in ["atm3D", "atm2D", "land"]:
+            if forcinfo.has_option("BaseInfo", key):
+                vars_str = forcinfo.get("BaseInfo", key).strip()
+                if vars_str:
+                    var_groups[key] = [v.strip() for v in vars_str.split(",") if v.strip()]
+        all_vars = sorted(set(sum(var_groups.values(), [])))
+        if forcinfo.has_option("BaseInfo", "const"):
+            const_vars = [v.strip() for v in forcinfo.get("BaseInfo", "const").strip().split(",") if v.strip()]
+        else:
+            const_vars = []
+            logger.warning("No constant variables specified under 'const' in [BaseInfo].")
+
+        used_files = []
+        # === 遍历每个变量，筛选对应文件 ===
+        for var in all_vars:
+            varname = forcinfo.get(var, "VarNameInData", fallback=var).strip()
+            timefreq = forcinfo.get(var, "TemporalRes", fallback="6H").strip().upper()
+
+            # 从 fileindex_df 中找出包含该变量的文件
+            pattern = fr'(?<![A-Za-z0-9_]){re.escape(varname)}(?![A-Za-z0-9_])'
+            df_var = fileindex_df[fileindex_df["Variables"].str.contains(pattern, na=False, regex=True)].copy()
+            # df_var = fileindex_df[fileindex_df["Variables"].str.contains(varname, na=False)].copy()
+
+            if df_var.empty:
+                logger.warning(f"[{var}] No files found containing variable '{varname}'.")
+                continue
+
+            # 解析时间列
+            df_var["StartTime"] = pd.to_datetime(df_var["StartTime"], errors="coerce")
+            df_var["EndTime"] = pd.to_datetime(df_var["EndTime"], errors="coerce")
+
+            # 基于频率的时间范围过滤
+            if timefreq.endswith("M"):  # 月度：精确到 YYYY-MM
+                # 把数据与查询区间都转为“月”Period
+                start_month = pd.Period(pd.to_datetime(ts_start), freq="M")
+                end_month   = pd.Period(pd.to_datetime(ts_end),   freq="M")
+
+                df_var["StartMonth"] = df_var["StartTime"].dt.to_period("M")
+                df_var["EndMonth"]   = df_var["EndTime"].dt.to_period("M")
+
+                mask = (df_var["EndMonth"] >= start_month) & (df_var["StartMonth"] <= end_month)
+                df_used = df_var.loc[mask].dropna(subset=["FileName"])
+
+            elif timefreq.endswith("D"):  # 日度：精确到天（可用 Period('D')，更直观）
+                start_day = pd.Period(pd.to_datetime(ts_start), freq="D")
+                end_day   = pd.Period(pd.to_datetime(ts_end),   freq="D")
+
+                df_var["StartDay"] = df_var["StartTime"].dt.to_period("D")
+                df_var["EndDay"]   = df_var["EndTime"].dt.to_period("D")
+
+                mask = (df_var["EndDay"] >= start_day) & (df_var["StartDay"] <= end_day)
+                df_used = df_var.loc[mask].dropna(subset=["FileName"])
+            else:
+                # 小时级（含 6H 等）：保持原来的时间戳比较最简单可靠
+                df_used = df_var[
+                    (df_var["EndTime"]   >= pd.to_datetime(ts_start)) &
+                    (df_var["StartTime"] <= pd.to_datetime(ts_end))
+                ].dropna(subset=["FileName"])
+
+            if df_used.empty:
+                logger.warning(f"Variable [{var}] No time-overlapping files found in range {ts_start}–{ts_end}")
+                continue
+
+            # 链接文件
+            target_dir = Path(f"./DATA/{var}")
+            target_dir.mkdir(parents=True, exist_ok=True)
+            for _, row in df_used.iterrows():
+                src = Path(row["FilePath"])
+                dst = target_dir / src.name
+                Tools.File_Exist(src, level="error")
+                Tools.Link(f"{src}", f"{dst}")
+                used_files.append(str(dst))
+    
+        # === constant 类型 ===
+        target_dir = Path(f"./DATA/const")
+        target_dir.mkdir(parents=True, exist_ok=True)
+        for var in const_vars:
+            varname = forcinfo.get(var, "VarNameInData", fallback=var).strip()
+
+            # 从 fileindex_df 中找出包含该变量的文件
+            df_var = fileindex_df[fileindex_df["Variables"].str.contains(varname, na=False)].copy()
+
+            if df_var.empty:
+                logger.warning(f"[{var}] No files found containing variable '{varname}'.")
+                continue
+
+            src = Path(df_var.iloc[0]["FilePath"])
+            dst = target_dir / f'{var}.nc'
+            Tools.File_Exist(src, level="error")
+            Tools.Link(f"{src}", f"{dst}")
+            used_files.append(str(dst))
+
+        used_files = sorted(set(used_files))
+
+        # Alternating Time in namelist.wps
+        start_time_str = start_time.strftime('%Y-%m-%d_%H:%M:%S')
+        end_time_str = end_time.strftime('%Y-%m-%d_%H:%M:%S')
+        str_use = f"start_date = '{start_time_str}',"
+        cmd = f"sed -i '/start_date/c\\{str_use}' namelist.wps"
+        Tools.Run_CMD(cmd, "Alternating Time in namelist.wps")
+        str_use = f"end_date = '{end_time_str}', "
+        cmd = f"sed -i '/end_date/c\\{str_use}' namelist.wps"
+        Tools.Run_CMD(cmd, "Alternating Time in namelist.wps")
+        str_use="interval_seconds = 21600,"
+        cmd = f"sed -i '/interval_seconds/c\\{str_use}' namelist.wps"
+        Tools.Run_CMD(cmd, "Alternating Time in namelist.wps")
+        
+        # ungrib 2D files
+        startdate = start_time.strftime('%Y-%m-%d')
+        enddate = end_time.strftime('%Y-%m-%d')
+        Tools.Link('./Variable_Tables/Vtable.ECMWF', 'Vtable')
+        cmd = f'rm -rf GRIBFILE.*'
+        Tools.Run_CMD(cmd, "Remove old GRIBFILE")
+        log_file = f'{CaseOutputPath}/{gridname}/Log/log.ungrib_2D.{time_str}'
+        cmd  = f'conda run -n {cresmenv} --no-capture-output python -u ungrib_nc2im.py '
+        cmd += f'--forcename {ForcingName} --startdate {startdate} --enddate {enddate} '
+        cmd += f'--inputdir ./DATA --outputdir ./ --nprocs {CWRFCoreNum} -env {ungribenv} '
+        cmd += f'--forcinfopath {Forc_Info} > {log_file} 2>&1'
+        Tools.Run_CMD(cmd, "Run ungrib_nc2im.py")
+        # os.system(f'mv ungrib.log ungrib_2D.log')
+        timeseries = Tools.Generate_Timeseries(start_time, end_time, DataCalender, freq='6H')
+        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[0], timeseries)
+        logger.info(f'{Consts.S4}✓  {time_str}: Ungrib 2D')
+        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[1], timeseries)
+        logger.info(f'    ✓  {time_str}: Ungrib 3D')
+        Tools.Check_Ungrib_Finish(os.getcwd(), prefix[2], timeseries)
+        logger.info(f'{Consts.S4}✓  {time_str}: Ungrib SST')
         logger.info(f'{Consts.S4}✓  {time_str}: mod_lev')
     else:
         logger.info(f'{Consts.S4}==========> Skip Ungrib {time_str} <==========')
@@ -917,10 +1119,19 @@ def Ungrib(casecfg, envcfg, gridname, start_time, end_time):
     elif ForcingDataName == 'mpi-esm1-2-hr_ssp585':
         # Call the MPI-ESM1-2-HR_ssp585 Ungrib function
         Ungrib_MPI_ESM1_2_HR_ssp585(casecfg, envcfg, gridname, start_time, end_time)
+    elif ForcingDataName == 'cesm2_hist':
+        # Call the CESM2_hist Ungrib function
+        Ungrib_CESM2_hist(casecfg, envcfg, gridname, start_time, end_time)
     else:
         logger.error(f"Unsupported ForcingDataName: {ForcingDataName}.")
-        logger.error("Supported driver data is : 'CFSV2' or 'ERA5' or 'MPI-ESM1-2-HR_hist' or 'MPI-ESM1-2-HR_ssp245' or 'MPI-ESM1-2-HR_ssp585'.")
-        raise ValueError(f"Unsupported ForcingDataName: {ForcingDataName}. Please use 'CFSV2' or 'ERA5' or 'MPI-ESM1-2-HR_hist' or 'MPI-ESM1-2-HR_ssp245' or 'MPI-ESM1-2-HR_ssp585'.")
+        logger.error("Supported driver data is :")
+        logger.error(f"{Consts.S8}CFSV2")
+        logger.error(f"{Consts.S8}ERA5")
+        logger.error(f"{Consts.S8}MPI-ESM1-2-HR_hist")
+        logger.error(f"{Consts.S8}MPI-ESM1-2-HR_ssp245")
+        logger.error(f"{Consts.S8}MPI-ESM1-2-HR_ssp585")
+        logger.error(f"{Consts.S8}CESM2_hist")
+        raise ValueError(f"Unsupported ForcingDataName: {ForcingDataName}. ")
 
 
 def Metgrid(casecfg, envcfg, gridname, start_time, end_time):
@@ -932,6 +1143,7 @@ def Metgrid(casecfg, envcfg, gridname, start_time, end_time):
     Forc_Info = envcfg.get(ForcingDataName, 'Forc_Info')
     CWRFCoreNum = casecfg.getint('PrepCWRF', 'CWRFCoreNum')
     SYS_CWRF = envcfg.get('Environment', 'SYS_CWRF')
+    DataCalender = envcfg.get(ForcingDataName, 'DataCalender')
 
     prefix = ["2D","3D","SST"]
     
@@ -967,13 +1179,15 @@ def Metgrid(casecfg, envcfg, gridname, start_time, end_time):
             cmd = f"./metgrid.exe > {log_file} 2>&1"
         elif CWRFCoreNum > 1:
             cmd = f"mpirun -n {CWRFCoreNum} ./metgrid.exe > {log_file} 2>&1"
-        Tools.Run_CMD(cmd, "Run metgrid.exe", env=SYS_CWRF)                           # metgrid.exe can use mpirun when handling large size data
-        Tools.Check_Metgrid_Finish(os.getcwd(), 'met_em.d01', 6, start_time, end_time)
+        Tools.Run_CMD(cmd, "Run metgrid.exe", env=SYS_CWRF)                
+        timeseries = Tools.Generate_Timeseries(start_time, end_time, DataCalender, freq='6H')
+        Tools.Check_Metgrid_Finish(os.getcwd(), 'met_em.d01', timeseries)
         logger.info(f'{Consts.S4}✓  {time_str}: Metgrid ')
 
         # SST Processing
         fs = glob.glob(f'./met_em*d01*')
-        timelist = pd.date_range(start=start_time, end=end_time, freq='D')
+        # timelist = pd.date_range(start=start_time, end=end_time, freq='D')
+        timelist = Tools.Generate_Timeseries(start_time, end_time, DataCalender, freq='D')
         for iday in range(len(timelist)):
             metfiles = glob.glob(f'./met_em.d01.{timelist[iday].strftime("%Y-%m-%d")}*.nc')
             Tools.File_Exist(metfiles, level='error')
@@ -999,6 +1213,10 @@ def Real(casecfg, envcfg, gridname, timelist):
     Go_VBS = casecfg.getboolean('PrepCWRF', 'Go_VBS')
     CWRFToolPath = envcfg.get('Paths', 'CWRFToolPath')
     SYS_CWRF = envcfg.get('Environment', 'SYS_CWRF')
+    ForcingDataName = casecfg.get(gridname, 'ForcingDataName')
+    ForcingDataName = ForcingDataName.strip().lower()
+    DataCalender = envcfg.get(ForcingDataName, 'DataCalender')
+    calendar_std = Tools.Normalize_Calendar_Name(DataCalender)
 
     CWRFNMLPath = f'{CaseOutputPath}/{gridname}/NMLS/namelist.cwrf.{gridname}'
 
@@ -1014,7 +1232,10 @@ def Real(casecfg, envcfg, gridname, timelist):
         logger.info(f'{Consts.S4}==========> Real <==========')
         
         # link needed CWPS files into temporary dictionary
-        Tools.Link(f'{CWRFToolPath}/executable/*', '.')
+        if calendar_std == 'standard':
+            Tools.Link(f"{CWRFToolPath}/executable/*", ".")
+        elif calendar_std == 'noleap':
+            Tools.Link(f"{CWRFToolPath}/executable_noleap/*", ".")
         Tools.Link(f"{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/Geog_{gridname}/geo_em.d01_veg.nc", "./geo_em.d01.nc")
         Tools.Copy(CWRFNMLPath, "./namelist.input")
         
@@ -1035,6 +1256,7 @@ def Real(casecfg, envcfg, gridname, timelist):
 
     if Go_VBS:
         #---------------------- Vbs ----------------------
+        # VBS is wrong. it works as leap calendar now. dont consider the noleap year.
         logger.info(f'{Consts.S4}==========> Vbs <==========')
         start_time, _ = timelist[0]
         _, end_time = timelist[-1]
@@ -1049,7 +1271,7 @@ def Real(casecfg, envcfg, gridname, timelist):
         log_file = f'{CaseOutputPath}/{gridname}/Log/log.vbs'
         cmd = f"./vbs.re_d01.exe  < vbs.input > {log_file} 2>&1"        
         Tools.Run_CMD(cmd, "Run vbs.re_d01.exe", env=SYS_CWRF)
-        logger.info(f'{Consts.S4}✓  {time_str}: Vbs')
+        logger.info(f'{Consts.S4}✓  Vbs')
     else:
         logger.info(f'{Consts.S4}==========> Skip Vbs <==========')
     
@@ -1068,15 +1290,18 @@ def Link_CWPS_Files(casecfg, envcfg, gridname, start_time, end_time):
     """
     old_path = os.getcwd()
     ForcingDataName = casecfg.get(gridname, 'ForcingDataName')
+    ForcingDataName = ForcingDataName.strip().lower()
     CaseOutputPath = casecfg.get(gridname, 'CaseOutputPath')
     CWPSPath = envcfg.get('Paths', 'CWPSPath')
     CWRFToolPath = envcfg.get('Paths', 'CWRFToolPath')
     CWPSStaticPath = envcfg.get('Paths', 'CWPSStaticPath')
     WMEJUngrib = envcfg.get('Paths', 'WMEJUngrib')
+    DataCalender = envcfg.get(ForcingDataName, 'DataCalender')
     CWPSNMLPath = f'{CaseOutputPath}/{gridname}/NMLS/namelist.cwps.{gridname}'
     CWRFNMLPath = f'{CaseOutputPath}/{gridname}/NMLS/namelist.cwrf.{gridname}'
-    ForcingDataName = ForcingDataName.strip().lower()
     time_str = f'{start_time.year}-{start_time.month:02d}-{start_time.day:02d}_{end_time.year}-{end_time.month:02d}-{end_time.day:02d}'
+    calendar_std = Tools.Normalize_Calendar_Name(DataCalender)
+    
     # mkdir
     cmd = f'mkdir -p {CaseOutputPath}/{gridname}/PrepCWRF/Second_ICBC/UngribMetgrid_{time_str}'
     Tools.Run_CMD(cmd, f"Create directory UngribMetgrid_{time_str}")
@@ -1085,7 +1310,10 @@ def Link_CWPS_Files(casecfg, envcfg, gridname, start_time, end_time):
     os.chdir(f'{CaseOutputPath}/{gridname}/PrepCWRF/Second_ICBC/UngribMetgrid_{time_str}')
 
     # link needed CWPS files into temporary dictionary
-    Tools.Link(f"{CWRFToolPath}/executable/*", ".")
+    if calendar_std == 'standard':
+        Tools.Link(f"{CWRFToolPath}/executable/*", ".")
+    elif calendar_std == 'noleap':
+        Tools.Link(f"{CWRFToolPath}/executable_noleap/*", ".")
     Tools.Link(f"{CWPSPath}/ungrib/Variable_Tables", ".")
     Tools.Link(f"{CWPSStaticPath}/METGRID.TBL.sq", "METGRID.TBL")
     Tools.Link(f"{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/Geog_{gridname}/geo_em.d01_veg.nc", "./geo_em.d01.nc")
@@ -1107,6 +1335,9 @@ def Link_CWPS_Files(casecfg, envcfg, gridname, start_time, end_time):
     elif ForcingDataName == 'mpi-esm1-2-hr_ssp585':
         Tools.Link(f"{CWPSStaticPath}/soilhgt.MPI-ESM1-2-HR.WMEJ", "./soilhgt")
         Tools.Link(f'{WMEJUngrib}/*', '.')
+    elif ForcingDataName == 'cesm2_hist':
+        Tools.Link(f"{CWPSStaticPath}/soilhgt.CESM2.WMEJ", "./soilhgt")
+        Tools.Link(f'{WMEJUngrib}/*', '.')
     else:
         logger.error(f"Unsupported ForcingDataName: {ForcingDataName}.")
         logger.error("Supported driver data is :")
@@ -1115,6 +1346,7 @@ def Link_CWPS_Files(casecfg, envcfg, gridname, start_time, end_time):
         logger.error(f"{Consts.S8}MPI-ESM1-2-HR_hist")
         logger.error(f"{Consts.S8}MPI-ESM1-2-HR_ssp245")
         logger.error(f"{Consts.S8}MPI-ESM1-2-HR_ssp585")
+        logger.error(f"{Consts.S8}CESM2_hist")
         raise ValueError(f"Unsupported ForcingDataName: {ForcingDataName}. ")
 
     os.chdir(old_path)

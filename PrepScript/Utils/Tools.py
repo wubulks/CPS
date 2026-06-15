@@ -13,7 +13,7 @@ Description   : Core utility library for CRESM Data Preparation.
 
 Author        : Omarjan @ SYSU
 Created       : 2025-05-25
-Last Modified : 2026-01-21
+Last Modified : 2026-06-15
 ===============================================================================
 """
 
@@ -33,6 +33,7 @@ from datetime import timedelta, datetime
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from .Logger import Log_Redirect_Tail
 from . import Consts as Consts
+from typing import Union, List, Optional
 
 logger = logging.getLogger("CRESMPrep." + __name__)
 
@@ -175,6 +176,8 @@ def File_Exist(filepath, level=None, count=None):
 
     return True
 
+
+
 def Link(src_in, dst_in, force=True):
     """
     Create symbolic link (ln -sf).
@@ -208,6 +211,7 @@ def Link(src_in, dst_in, force=True):
             src_abs = os.path.abspath(s)
             dst_abs = os.path.abspath(dst_in)
             _Link_src(src_abs, dst_abs)
+
 
 
 def Copy(src, dst, overwrite=True):
@@ -276,6 +280,7 @@ def Copy(src, dst, overwrite=True):
             raise ValueError(f"Unsupported source type: {src_item}")
 
 
+
 def Split_Days(start, end, parts):
     """
     Split [start, end] into parts by day.
@@ -298,6 +303,301 @@ def Split_Days(start, end, parts):
     return [(edges[i], edges[i + 1]) for i in range(parts)]
 
 
+
+def Normalize_Calendar_Name(calendar: str) -> str:
+    """
+    将不同写法的日历名称统一为标准名称。
+
+    Parameters
+    ----------
+    calendar : str
+        日历名称，支持大小写、空格、连字符、下划线等不同写法。
+
+    Returns
+    -------
+    str
+        标准化后的日历名称，可用于 cftime 或后续判断。
+        返回值包括：
+        - 'standard'
+        - 'noleap'
+        - '360_day'
+        - 'all_leap'
+        - 'julian'
+
+    Raises
+    ------
+    TypeError
+        当 calendar 不是字符串时抛出。
+    ValueError
+        当 calendar 无法识别时抛出。
+    """
+    if not isinstance(calendar, str):
+        raise TypeError(f"calendar 必须是字符串，得到: {type(calendar)}")
+
+    # 统一大小写，并兼容空格、连字符、下划线等写法
+    cal_raw = calendar.strip().lower()
+    cal_key = cal_raw.replace("-", "_").replace(" ", "_")
+    cal_compact = cal_key.replace("_", "")
+
+    cal_map = {
+        # standard / gregorian
+        "standard": "standard",
+        "std": "standard",
+        "gregorian": "standard",
+        "greg": "standard",
+        "proleptic_gregorian": "standard",
+        "prolepticgregorian": "standard",
+
+        # noleap / 365_day
+        "noleap": "noleap",
+        "no_leap": "noleap",
+        "noleapyear": "noleap",
+        "365_day": "noleap",
+        "365_days": "noleap",
+        "365day": "noleap",
+        "365days": "noleap",
+        "365d": "noleap",
+        "365": "noleap",
+
+        # # 360_day
+        # "360_day": "360_day",
+        # "360_days": "360_day",
+        # "360day": "360_day",
+        # "360days": "360_day",
+        # "360d": "360_day",
+        # "360": "360_day",
+
+        # # all_leap / 366_day
+        # "all_leap": "all_leap",
+        # "allleap": "all_leap",
+        # "alleap": "all_leap",
+        # "366_day": "all_leap",
+        # "366_days": "all_leap",
+        # "366day": "all_leap",
+        # "366days": "all_leap",
+        # "366d": "all_leap",
+        # "366": "all_leap",
+
+        # # julian
+        # "julian": "julian",
+    }
+
+    calendar_standardized = cal_map.get(cal_key)
+    if calendar_standardized is None:
+        calendar_standardized = cal_map.get(cal_compact)
+
+    if calendar_standardized is None:
+        supported = sorted(set(cal_map.values()))
+        raise ValueError(
+            f"无法识别的日历名称: {calendar!r}。"
+            f"支持的标准日历包括: {supported}"
+        )
+
+    return calendar_standardized
+
+
+
+def Generate_Timeseries(start, end, calendar="standard", freq="D"):
+    """
+    生成指定日历下的时间序列。
+
+    Parameters
+    ----------
+    start : str, datetime, pd.Timestamp, np.datetime64
+        开始时间（包含该时间点）。
+    end : str, datetime, pd.Timestamp, np.datetime64
+        结束时间（包含该时间点）。
+    calendar : str
+        日历类型，支持多种常见写法，不区分大小写、空格、连字符等。
+        最终会标准化为 cftime 所识别的日历名。
+        可接受的值示例：
+          - 标准公历: 'standard', 'std', 'gregorian', 'proleptic_gregorian'
+          - 无闰年:   'noleap', 'no_leap', '365_day', '365day', '365d', '365'
+    freq : str
+        频率，支持以下模式（不区分大小写，可带乘数，例如 '2H'、'3M'）：
+          - 'D' / '1D' / 'day'   : 每日
+          - 'H' / '2H' / 'hour'  : 每小时
+          - 'T' / 'min' / '3min' : 每分钟
+          - 'MS' / '1MS'         : 月初
+          - 'M' / '2M' / 'month' : 月末
+          - 'YS' / '1YS'         : 年初
+          - 'Y' / '2Y' / 'year'  : 年末
+        对于非标准日历，目前不支持更细粒度（秒）或倍数小于1的频率。
+
+    Returns
+    -------
+    pd.Index
+        如果日历为标准公历，返回 pd.DatetimeIndex；
+        否则返回包含 cftime.datetime 对象的 pd.Index。
+
+    Raises
+    ------
+    ImportError
+        当使用非标准日历但未安装 cftime 时抛出。
+    ValueError
+        日历无法识别、频率不支持或时间字符串无法解析时抛出。
+    """
+    # ---------- 解析频率（乘数 + 单位） ----------
+    def _parse_freq(freq_str):
+        """返回 (乘数int, 规范单位str: D/H/T/MS/M/YS/Y)"""
+        freq_str = freq_str.strip()
+        match = re.match(r'^(\d*)\s*([a-zA-Z_]+)$', freq_str)
+        if not match:
+            raise ValueError(
+                f"无法解析的频率字符串: {freq_str!r}。"
+                f"期望格式例如 'D', '2H', '3min' 等。"
+            )
+        num_str, unit_str = match.groups()
+        n = int(num_str) if num_str else 1
+        if n <= 0:
+            raise ValueError(f"频率乘数必须为正整数，得到: {n}")
+
+        unit_upper = unit_str.upper()
+        # 频率单位映射（统一为内部代号）
+        unit_map = {
+            'D': 'D', 'DAY': 'D', 'DAYS': 'D',
+            'H': 'H', 'HR': 'H', 'HOUR': 'H', 'HOURS': 'H',
+            'T': 'T', 'MIN': 'T', 'MINUTE': 'T', 'MINUTES': 'T',
+            'M': 'M', 'MONTH': 'M', 'MONTHS': 'M', 'MTH': 'M',
+            'MS': 'MS', 'MONTHSTART': 'MS', 'MSTART': 'MS',
+            'Y': 'Y', 'YEAR': 'Y', 'YEARS': 'Y', 'YR': 'Y', 'A': 'Y', 'ANNUAL': 'Y',
+            'YS': 'YS', 'YEARSTART': 'YS', 'YSTART': 'YS', 'AS': 'YS', 'ANNUALSTART': 'YS',
+        }
+        if unit_upper not in unit_map:
+            raise ValueError(
+                f"不支持的频率单位: {unit_str!r}。"
+                f"支持的单位: D, H, T/min, M, MS, Y, YS 等"
+            )
+        return n, unit_map[unit_upper]
+
+    n_freq, base_freq = _parse_freq(freq)
+
+    # ----- 日历名称标准化 -----
+    calendar_standardized = Normalize_Calendar_Name(calendar)
+
+    standard_calendars = {"standard", "gregorian", "proleptic_gregorian"}
+
+    # ----- 按需导入 cftime -----
+    cftime = None
+    if calendar_standardized not in standard_calendars:
+        try:
+            import cftime as cftime_mod
+            cftime = cftime_mod
+        except ImportError:
+            raise ImportError(
+                "使用非标准日历需要安装 cftime 库。请运行: pip install cftime"
+            )
+
+    # ----- 时间输入统一转换 -----
+    def to_pd_timestamp(t):
+        if isinstance(t, pd.Timestamp):
+            return t
+        if isinstance(t, np.datetime64):
+            return pd.Timestamp(t)
+        if isinstance(t, datetime):
+            return pd.Timestamp(t)
+        if isinstance(t, str):
+            try:
+                return pd.to_datetime(t)
+            except Exception:
+                if cftime is not None:
+                    try:
+                        cft = cftime.datetime.strptime(
+                            t, "%Y-%m-%d %H:%M:%S", calendar="standard"
+                        )
+                        return pd.Timestamp(cft.isoformat())
+                    except Exception:
+                        raise ValueError(f"无法解析时间字符串: {t!r}")
+                raise
+        raise TypeError(f"不支持的时间输入类型: {type(t)}")
+
+    def to_cftime(t, cal):
+        if hasattr(t, "calendar") and t.calendar == cal:
+            return t
+        ts = to_pd_timestamp(t)
+        return cftime.datetime(
+            ts.year, ts.month, ts.day,
+            ts.hour, ts.minute, ts.second, ts.microsecond,
+            calendar=cal,
+        )
+
+    # ----- 标准日历：直接使用 pandas -----
+    if calendar_standardized in standard_calendars:
+        s = to_pd_timestamp(start)
+        e = to_pd_timestamp(end)
+        # 构造 pandas 频率字符串（例如 '2H', '3MS'）
+        freq_pd = f"{n_freq}{base_freq}"
+        return pd.date_range(start=s, end=e, freq=freq_pd)
+
+    # ----- 非标准日历：逐点生成 -----
+    s_cft = to_cftime(start, calendar_standardized)
+    e_cft = to_cftime(end, calendar_standardized)
+
+    current = s_cft
+    dates = []
+
+    # 日、时、分频率：使用 datetime.timedelta
+    if base_freq == 'D':
+        step = timedelta(days=n_freq)
+        while current <= e_cft:
+            dates.append(current)
+            current = current + step
+    elif base_freq == 'H':
+        step = timedelta(hours=n_freq)
+        while current <= e_cft:
+            dates.append(current)
+            current = current + step
+    elif base_freq == 'T':
+        step = timedelta(minutes=n_freq)
+        while current <= e_cft:
+            dates.append(current)
+            current = current + step
+    elif base_freq in ('MS', 'M'):
+        while current <= e_cft:
+            dates.append(current)
+            total_months = current.year * 12 + current.month - 1 + n_freq
+            new_year = total_months // 12
+            new_month = total_months % 12 + 1
+            next_first = cftime.datetime(new_year, new_month, 1,
+                                         calendar=calendar_standardized)
+            if base_freq == 'M':
+                # 月末：月初减1天
+                current = next_first - timedelta(days=1)
+            else:  # 'MS'
+                current = next_first
+    elif base_freq in ('YS', 'Y'):
+        while current <= e_cft:
+            dates.append(current)
+            if base_freq == 'Y':
+                # 先将当前点调整到该年份的最后一天
+                try:
+                    last_day = cftime.datetime(current.year, 12, 31,
+                                               calendar=calendar_standardized)
+                except ValueError:
+                    last_day = cftime.datetime(current.year, 12, 30,
+                                               calendar=calendar_standardized)
+                if last_day >= current:
+                    current = last_day
+                # 向后移动 n_freq 年，到达新的最后一天
+                next_year = current.year + n_freq
+                try:
+                    current = cftime.datetime(next_year, 12, 31,
+                                              calendar=calendar_standardized)
+                except ValueError:
+                    current = cftime.datetime(next_year, 12, 30,
+                                              calendar=calendar_standardized)
+            else:  # 'YS'
+                next_year = current.year + n_freq
+                current = cftime.datetime(next_year, 1, 1,
+                                          calendar=calendar_standardized)
+    else:
+        # 理论上不会到达这里，因为解析已过滤
+        raise ValueError(f"不支持的基础频率: {base_freq!r}")
+
+    return pd.Index(dates)
+
+
+
 def Get_Forc_File_Path(path, date):
     """
     Replace forcing path placeholders.
@@ -308,20 +608,20 @@ def Get_Forc_File_Path(path, date):
                 .replace("<HH>", f"{date.hour:02d}"))
 
 
-def Check_Ungrib_Finish(path, prefix, interval, start_time, end_time):
+def Check_Ungrib_Finish(path, prefix, timeseries):
     """
     Check ungrib output completeness.
     """
-    for itime in pd.date_range(start=start_time, end=end_time, freq=f"{interval}h"):
+    for itime in timeseries:
         file_path = f"{path}/{prefix}:{itime.strftime('%Y-%m-%d_%H')}"
         File_Exist(file_path, level="error")
 
 
-def Check_Metgrid_Finish(path, prefix, interval, start_time, end_time):
+def Check_Metgrid_Finish(path, prefix, timeseries):
     """
     Check metgrid output completeness.
     """
-    for itime in pd.date_range(start=start_time, end=end_time, freq=f"{interval}h"):
+    for itime in timeseries:
         file_path = f"{path}/{prefix}.{itime.strftime('%Y-%m-%d_%H:%M:%S')}.nc"
         File_Exist(file_path, level="error")
 
@@ -503,7 +803,7 @@ def macros_as_bracketed_tokens(src):
 
 
 
-def Build_SinGridList_From_MaxMinWGS(maxmin_wgs, Expand_Deg=2, Return_String=False):
+def Build_SinGridList_From_MaxMinWGS(maxmin_wgs, Expand_Deg=10, Return_String=False):
     """
     Build MODIS Sinusoidal tile list from lon/lat bounding box (WGS84).
     Expand_Deg : float
@@ -681,7 +981,7 @@ def Print_Config_Help():
                CRESM Preprocessing System (CPS) Configuration Help
 ================================================================================
 Author: Omarjan @ SYSU
-Version: v1.2.0
+Version: v1.2.3
 
 This tool relies on two configuration files:
   1. case.ini : Experiment workflow and domain settings (Varies per case).
@@ -696,6 +996,8 @@ PART 1: case.ini (Experiment Configuration)
   CleanTempFiles           : If True, deletes intermediate files to save disk space.
                              [!] CAUTION: Hard to debug if enabled.
   Use_CoLMLAI              : If True, uses CoLM's LAI data instead of default MODIS.
+  Use_CoLMSeaMask          : If True, uses CoLM's Sea Mask data to identify sea areas. 
+                             False means using shpfile lake/sea mask.
   Enable_TimeChunk         : Enable time-splitting for long simulations.
   TimeChunkCount           : Number of chunks to split the run into (suggest 4-10).
 
@@ -775,6 +1077,7 @@ CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid
   CWPSPath                 : Path to CWRF-CWPS tool.
   CWRFToolPath             : Path to CWRF specific tools.
   GeogDataPath             : Path to CWRF Geogrid binary data (geog_wm_modified_lake).
+  LandSeaMaskPath          : Path to Land-Sea Mask data (Newly added).
   CWPSStaticPath           : Path to CWPS static tables/files.
   GlobalLakeDepth          : Path to Global Lake Depth data file (.dat).
   GlobalLakeStatus         : Path to Global Lake Status data file (.dat).
@@ -864,7 +1167,7 @@ CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid
     # =========================
     def print_overview(
         author="Omarjan @ SYSU",
-        version="v1.0.0",
+        version="v1.2.3",
         date="2025-05-25",
         envs=None,
     ):
@@ -964,9 +1267,10 @@ CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid
     print_part("PART 1: case.ini (Experiment Configuration)", color="blue", width=MAX_WIDTH)
 
     data_base = [
-        ("CleanTempFiles", "bool", "Delete intermediate files? [bold red][!] CAUTION[/]"),
-        ("Use_CoLMLAI", "bool", "Use CoLM's LAI data instead of MODIS for CWRF."),
-        ("Enable_TimeChunk", "bool", "Enable time-splitting for long simulations."),
+        ("CleanTempFiles", "switch", "Delete intermediate files? [bold red][!] CAUTION[/]"),
+        ("Use_CoLMLAI", "switch", "Use CoLM's LAI data instead of MODIS for CWRF."),
+        ("Use_CoLMSeaMask", "switch", "Use CoLM's Sea Mask data to identify sea areas. False means using shpfile lake/sea mask."),
+        ("Enable_TimeChunk", "switch", "Enable time-splitting for long simulations."),
         ("TimeChunkCount", "int", "Number of chunks (suggest 4-10)."),
     ]
     create_section_table("[BaseInfo]", data_base, color="blue", width=MAX_WIDTH, indent_left=4)
@@ -1032,8 +1336,8 @@ CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid
     print_part("PART 2: env.ini (Environment Configuration)", color="green", width=MAX_WIDTH)
 
     data_envs = [
-        ("SYS_CWRF", "path", "Path to CWRF environment setup script (to be sourced)."),
-        ("SYS_CoLM", "path", "Path to CoLM environment setup script (to be sourced)."),
+        ("SYS_CWRF", "file", "Path to CWRF environment setup script (to be sourced)."),
+        ("SYS_CoLM", "file", "Path to CoLM environment setup script (to be sourced)."),
         ("CONDA_XESMF", "str", "Conda environment name for XESMF remapping."),
         ("CONDA_CHAO", "str", "Conda environment name for Chaomodis tools."),
         ("CONDA_UNGRIB", "str", "Conda environment name for Ungrib tools."),
@@ -1041,21 +1345,22 @@ CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid
     create_section_table("[Environment]", data_envs, color="green", width=MAX_WIDTH, indent_left=4)
 
     data_paths = [
-        ("ScriptPath", "path", "Absolute path to 'PrepScript' folder."),
-        ("CoLMModelPath", "path", "Path to CoLM source code/compiled model root."),
-        ("CoLMRawDataPath", "path", "Path to CoLM raw geographical/soil datasets."),
-        ("CoLMRunDataPath", "path", "Path to CoLM runtime data directory."),
-        ("CoLMForcingPath", "path", "Path to CoLM forcing data (e.g., ERA5-Land)."),
-        ("RootToolBox", "path", "Root directory of CRESM Data Prep Toolbox. "),
-        ("CWPSPath", "path", "Path to CWRF-CWPS tool.(Supports ${var})."),
-        ("CWRFToolPath", "path", "Path to CWRF specific tools.(Supports ${var})."),
-        ("GeogDataPath", "path", "Path to CWRF Geogrid binary data (geog_wm_modified_lake).(Supports ${var})."),
-        ("CWPSStaticPath", "path", "Path to CWPS static tables/files.(Supports ${var})."),
-        ("GlobalLakeDepth", "path", "Path to Global Lake Depth data file (.dat).(Supports ${var})."),
-        ("GlobalLakeStatus", "path", "Path to Global Lake Status data file (.dat).(Supports ${var})."),
-        ("WMEJUngrib", "path", "Path to WMEJ_NC2IM tool."),
-        ("WMEJModis", "path", "Paths to CoLM LAI data processing tools."),
-        ("ChaoModis", "path", "Paths to MODIS processing tools."),
+        ("ScriptPath", "dir", "Absolute path to 'PrepScript' folder."),
+        ("CoLMModelPath", "dir", "Path to CoLM source code/compiled model root."),
+        ("CoLMRawDataPath", "dir", "Path to CoLM raw geographical/soil datasets."),
+        ("CoLMRunDataPath", "dir", "Path to CoLM runtime data directory."),
+        ("CoLMForcingPath", "dir", "Path to CoLM forcing data (e.g., ERA5-Land)."),
+        ("RootToolBox", "dir", "Root directory of CRESM Data Prep Toolbox. "),
+        ("CWPSPath", "dir", "Path to CWRF-CWPS tool.(Supports ${var})."),
+        ("CWRFToolPath", "dir", "Path to CWRF specific tools.(Supports ${var})."),
+        ("GeogDataPath", "dir", "Path to CWRF Geogrid binary data (geog_wm_modified_lake).(Supports ${var})."),
+        ("LandSeaMaskPath", "dir", "Path to Land-Sea Mask data (Newly added).(Supports ${var})."),
+        ("CWPSStaticPath", "dir", "Path to CWPS static tables/files.(Supports ${var})."),
+        ("GlobalLakeDepth", "file", "Path to Global Lake Depth data file (.dat).(Supports ${var})."),
+        ("GlobalLakeStatus", "file", "Path to Global Lake Status data file (.dat).(Supports ${var})."),
+        ("WMEJUngrib", "dir", "Path to WMEJ_NC2IM tool."),
+        ("WMEJModis", "dir", "Paths to CoLM LAI data processing tools."),
+        ("ChaoModis", "dir", "Paths to MODIS processing tools."),
         ("NCOPath", "exe", "Path to 'ncks' executable"),
         ("CDOPath", "exe", "Path to 'cdo' executable."),
         ("NCLPath", "exe", "Path to 'ncl' executable."),
@@ -1075,6 +1380,4 @@ CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid
     # Footer：短 Rule + End 文本（宽度=100）
     short_rule(title="End of Help", width=MAX_WIDTH, style="magenta", title_style="bold magenta", align="center", char="━")
     console.print()
-
-
 

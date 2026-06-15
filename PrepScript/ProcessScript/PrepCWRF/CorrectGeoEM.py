@@ -3,9 +3,9 @@ import time
 import argparse
 import numpy as np
 from netCDF4 import Dataset
-from collections import deque
 import xarray as xr
 from numba import njit, prange
+from pyproj import CRS, Transformer
 
 ###################### - 函数定义区 - ######################
 def refine_ocean_with_landuse(mask: np.ndarray,
@@ -13,11 +13,29 @@ def refine_ocean_with_landuse(mask: np.ndarray,
                               land_threshold: float = 0.5,
                               water_index: int = 15) -> np.ndarray:
     """
-    用 landusef 修正海洋掩膜：
-      若某海洋格点（mask==1）处的“陆地比例总和”（=除 water_index 外的所有层之和）> land_threshold，
-      则改为陆地（置 0）。
+    使用 `LANDUSEF` 对海洋掩膜做一次保守修正。
+
+    本函数只做一件事：对于当前已经判定为海洋的格点，检查 `LANDUSEF`
+    中“非水体类别”的总比例是否过高。如果陆地类别总和超过给定阈值，
+    则认为该格点更像陆地，将其从海洋掩膜中移除。
+
+    参数
+    ----------
+    mask : np.ndarray
+        二维海洋掩膜，约定 `1=海洋`，`0=非海洋`。
+    landusef : np.ndarray
+        三维土地利用比例数组，形状必须为 `(n_types, n_lat, n_lon)`。
+    land_threshold : float, default=0.5
+        陆地比例阈值。仅当非水体类别总和严格大于该阈值时，
+        海洋格点才会被翻转为陆地。
+    water_index : int, default=15
+        水体类别在 `LANDUSEF` 第一维中的索引。
+
+    返回
+    ----------
+    np.ndarray
+        修正后的二维海洋掩膜，类型为 `uint8`，仍满足 `1=海洋`、`0=陆地/湖泊`。
     """
-    import numpy as np
     assert landusef.ndim == 3, "landusef 应为 (n_types, n_lat, n_lon)"
     assert landusef.shape[1:] == mask.shape, "landusef 和 mask 空间维度需一致"
     assert landusef.shape[0] > water_index, "landusef 第一维长度必须 > water_index"
@@ -31,14 +49,472 @@ def refine_ocean_with_landuse(mask: np.ndarray,
 
 
 
+def get_latlon_range(clat: np.ndarray,
+                     clon: np.ndarray,
+                     offset: float = 0.25) -> tuple[tuple[float, float], tuple[float, float]]:
+    """
+    计算二维经纬度场的包络范围，并在四周增加一个小的安全边界。
+
+    该函数主要用于从高分辨率全球经纬网格中裁剪出 CWRF 域对应的局部窗口，
+    减少后续点落区匹配时的内存与计算开销。
+
+    参数
+    ----------
+    clat, clon : np.ndarray
+        二维纬度、经度数组，通常为 CWRF 网格中心点或角点坐标。
+    offset : float, default=0.25
+        向外扩展的经纬度安全边界，单位为度。
+
+    返回
+    ----------
+    tuple[tuple[float, float], tuple[float, float]]
+        `(latrange, lonrange)`，其中
+        `latrange = (lat_min, lat_max)`，
+        `lonrange = (lon_min, lon_max)`。
+    """
+    latmax = float(np.max(clat))
+    latmin = float(np.min(clat))
+    lonmax = float(np.max(clon))
+    lonmin = float(np.min(clon))
+    latrange = (max(-90.0, latmin - offset), min(90.0, latmax + offset))
+    lonrange = (max(-180.0, lonmin - offset), min(180.0, lonmax + offset))
+    return latrange, lonrange
+
+
+
+def init_transformer_from_geoem(infil: Dataset) -> Transformer:
+    """
+    根据 `geo_em` 文件的投影属性构造 WGS84 与 Lambert Conformal 间的转换器。
+
+    当前脚本的高分辨率网格匹配逻辑优先使用真实的 CWRF 网格角点。
+    为此需要先将 `XLAT_M/XLONG_M` 中心点投影到 Lambert 平面，再结合 `DX/DY`
+    反推角点位置。本函数负责从 `geo_em` 全局属性中提取所需投影参数。
+
+    参数
+    ----------
+    infil : netCDF4.Dataset
+        已打开的 `geo_em` 文件句柄。
+
+    返回
+    ----------
+    pyproj.Transformer
+        支持 `WGS84 -> Lambert` 与 `Lambert -> WGS84` 双向转换的投影器。
+
+    异常
+    ----------
+    ValueError
+        当 `MAP_PROJ` 不是 Lambert Conformal (`MAP_PROJ=1`) 时抛出。
+    """
+    map_proj = int(getattr(infil, "MAP_PROJ", 1))
+    if map_proj != 1:
+        raise ValueError(f"当前仅支持 Lambert Conformal (MAP_PROJ=1)，实际为 {map_proj}")
+
+    truelat1 = float(getattr(infil, "TRUELAT1"))
+    truelat2 = float(getattr(infil, "TRUELAT2"))
+    reflat = float(getattr(infil, "MOAD_CEN_LAT", getattr(infil, "CEN_LAT")))
+    reflon = float(getattr(infil, "STAND_LON"))
+    earth_radius = float(getattr(infil, "RADIUS_EARTH", 6370000.0))
+
+    crs_wrf = CRS.from_proj4(
+        f"+proj=lcc "
+        f"+lat_1={truelat1} "
+        f"+lat_2={truelat2} "
+        f"+lat_0={reflat} "
+        f"+lon_0={reflon} "
+        f"+a={earth_radius} "
+        f"+b={earth_radius} "
+        f"+units=m"
+    )
+    return Transformer.from_crs(crs_wrf.geodetic_crs, crs_wrf, always_xy=True)
+
+
+
+@njit(fastmath=False)
+def generate_grid_corners_numba(x_center, y_center, dx, dy):
+    """
+    根据投影平面上的格点中心坐标与网格距，构造规则四边形角点。
+
+    这里假设 CWRF 网格在投影平面上是规则矩形网格，即每个格点
+    都可以由 `(center_x ± dx/2, center_y ± dy/2)` 唯一确定四个角点。
+    该假设与 WRF/CWRF 在 Lambert 平面中的离散方式一致。
+
+    参数
+    ----------
+    x_center, y_center : np.ndarray
+        二维中心点投影坐标，形状相同。
+    dx, dy : float
+        投影平面上的网格距，单位通常为米。
+
+    返回
+    ----------
+    tuple[np.ndarray, np.ndarray]
+        `(x_corners, y_corners)`，形状均为 `(ny+1, nx+1)`。
+
+    说明
+    ----------
+    这里不使用 `parallel=True`。原因是相邻格点会写入共享角点，
+    并行写同一位置虽然理论上值应一致，但仍可能产生不必要的竞争风险。
+    """
+    x_center = x_center.astype(np.float64)
+    y_center = y_center.astype(np.float64)
+    dx = np.float64(dx)
+    dy = np.float64(dy)
+    half_dx = dx / 2.0
+    half_dy = dy / 2.0
+
+    ny, nx = x_center.shape
+    x_corners = np.empty((ny + 1, nx + 1), dtype=x_center.dtype)
+    y_corners = np.empty((ny + 1, nx + 1), dtype=y_center.dtype)
+
+    for i in prange(ny):
+        for j in range(nx):
+            xc = x_center[i, j]
+            yc = y_center[i, j]
+            x_corners[i,   j]   = xc - half_dx
+            x_corners[i,   j+1] = xc + half_dx
+            x_corners[i+1, j]   = xc - half_dx
+            x_corners[i+1, j+1] = xc + half_dx
+
+            y_corners[i,   j]   = yc - half_dy
+            y_corners[i,   j+1] = yc - half_dy
+            y_corners[i+1, j]   = yc + half_dy
+            y_corners[i+1, j+1] = yc + half_dy
+    return x_corners, y_corners
+
+
+
+def approximate_corners_from_centers(lons: np.ndarray,
+                                     lats: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """
+    在无法获取投影参数时，根据中心点经纬度场近似外推角点经纬度。
+
+    该方法不是严格几何意义上的真实角点，只是一个降级回退方案。
+    它通过相邻中心点中点先估算边界，再沿南北方向外推角点。
+    当 `geo_em` 缺少必要投影元数据、或投影转换失败时，脚本仍可继续运行。
+
+    参数
+    ----------
+    lons, lats : np.ndarray
+        二维中心点经纬度数组，形状必须完全一致。
+
+    返回
+    ----------
+    tuple[np.ndarray, np.ndarray]
+        近似的 `(lon_corners, lat_corners)`，形状均为 `(ny+1, nx+1)`。
+    """
+    ny, nx = lons.shape
+    lon_edges_x = np.empty((ny, nx + 1), dtype=np.float64)
+    lat_edges_x = np.empty((ny, nx + 1), dtype=np.float64)
+
+    lon_edges_x[:, 1:nx] = 0.5 * (lons[:, :-1] + lons[:, 1:])
+    lat_edges_x[:, 1:nx] = 0.5 * (lats[:, :-1] + lats[:, 1:])
+    lon_edges_x[:, 0] = lons[:, 0] - 0.5 * (lons[:, 1] - lons[:, 0])
+    lon_edges_x[:, nx] = lons[:, -1] + 0.5 * (lons[:, -1] - lons[:, -2])
+    lat_edges_x[:, 0] = lats[:, 0] - 0.5 * (lats[:, 1] - lats[:, 0])
+    lat_edges_x[:, nx] = lats[:, -1] + 0.5 * (lats[:, -1] - lats[:, -2])
+
+    lon_corners = np.empty((ny + 1, nx + 1), dtype=np.float64)
+    lat_corners = np.empty((ny + 1, nx + 1), dtype=np.float64)
+    lon_corners[1:ny, :] = 0.5 * (lon_edges_x[:-1, :] + lon_edges_x[1:, :])
+    lat_corners[1:ny, :] = 0.5 * (lat_edges_x[:-1, :] + lat_edges_x[1:, :])
+    lon_corners[0, :] = lon_edges_x[0, :] - 0.5 * (lon_edges_x[1, :] - lon_edges_x[0, :])
+    lon_corners[ny, :] = lon_edges_x[-1, :] + 0.5 * (lon_edges_x[-1, :] - lon_edges_x[-2, :])
+    lat_corners[0, :] = lat_edges_x[0, :] - 0.5 * (lat_edges_x[1, :] - lat_edges_x[0, :])
+    lat_corners[ny, :] = lat_edges_x[-1, :] + 0.5 * (lat_edges_x[-1, :] - lat_edges_x[-2, :])
+    return lon_corners, lat_corners
+
+
+
+@njit
+def point_in_poly_numba(x, y, poly_lon, poly_lat):
+    """
+    使用射线法判断单个点是否位于四边形内部。
+
+    参数
+    ----------
+    x, y : float
+        待判定点的经纬度坐标。
+    poly_lon, poly_lat : np.ndarray
+        四边形四个顶点的经度、纬度数组，顶点顺序需保持一致
+        （顺时针或逆时针均可）。
+
+    返回
+    ----------
+    bool
+        若点位于四边形内部，则返回 `True`，否则返回 `False`。
+    """
+    inside = False
+    j = poly_lon.shape[0] - 1
+    for i in range(poly_lon.shape[0]):
+        xi = poly_lon[i]
+        yi = poly_lat[i]
+        xj = poly_lon[j]
+        yj = poly_lat[j]
+        if ((yi > y) != (yj > y)) and (x < (xj - xi) * (y - yi) / (yj - yi + 1e-12) + xi):
+            inside = not inside
+        j = i
+    return inside
+
+
+
+@njit(parallel=True)
+def meshgrid_index_numba(global_lon2d, global_lat2d,
+                         lon_corners, lat_corners,
+                         global_lon_centers, global_lat_centers,
+                         sigma):
+    """
+    将高分辨率规则经纬网格的中心点映射到 CWRF 网格编号。
+
+    算法流程为：
+    1. 遍历每个 CWRF 格点四边形；
+    2. 先用经纬度包围盒缩小候选高分像元范围；
+    3. 再对候选像元中心执行点在多边形内测试；
+    4. 将命中的高分像元写入对应的 CWRF 线性编号。
+
+    参数
+    ----------
+    global_lon2d, global_lat2d : np.ndarray
+        局部高分辨率子区域的二维中心点经纬度网格。
+    lon_corners, lat_corners : np.ndarray
+        CWRF 网格角点经纬度，形状为 `(ny+1, nx+1)`。
+    global_lon_centers, global_lat_centers : np.ndarray
+        高分辨率子区域的一维经度、纬度中心坐标。
+    sigma : float
+        包围盒缓冲量，单位为度，用于避免边界浮点误差漏采样。
+
+    返回
+    ----------
+    np.ndarray
+        形状为 `(nlat, nlon)` 的二维整型数组。值为 `-1` 表示未命中任何
+        CWRF 格点，其余值为对应 CWRF 格点的线性编号 `j * nx + i`。
+    """
+    nlat, nlon = global_lon2d.shape
+    sn = lat_corners.shape[0] - 1
+    we = lon_corners.shape[1] - 1
+
+    grid = np.full((nlat, nlon), -1, np.int32)
+    for j in prange(sn):
+        for i in range(we):
+            poly_lon = np.empty(4, np.float64)
+            poly_lat = np.empty(4, np.float64)
+            poly_lon[0] = lon_corners[j,   i]
+            poly_lat[0] = lat_corners[j,   i]
+            poly_lon[1] = lon_corners[j,   i+1]
+            poly_lat[1] = lat_corners[j,   i+1]
+            poly_lon[2] = lon_corners[j+1, i+1]
+            poly_lat[2] = lat_corners[j+1, i+1]
+            poly_lon[3] = lon_corners[j+1, i]
+            poly_lat[3] = lat_corners[j+1, i]
+
+            min_lon = poly_lon[0]
+            max_lon = poly_lon[0]
+            min_lat = poly_lat[0]
+            max_lat = poly_lat[0]
+            for k in range(1, 4):
+                if poly_lon[k] < min_lon: min_lon = poly_lon[k]
+                if poly_lon[k] > max_lon: max_lon = poly_lon[k]
+                if poly_lat[k] < min_lat: min_lat = poly_lat[k]
+                if poly_lat[k] > max_lat: max_lat = poly_lat[k]
+            min_lon -= sigma
+            max_lon += sigma
+            min_lat -= sigma
+            max_lat += sigma
+
+            lon_start = 0
+            while lon_start < nlon and global_lon_centers[lon_start] < min_lon:
+                lon_start += 1
+            lon_end = lon_start
+            while lon_end < nlon and global_lon_centers[lon_end] <= max_lon:
+                lon_end += 1
+
+            lat_start = 0
+            while lat_start < nlat and global_lat_centers[lat_start] > max_lat:
+                lat_start += 1
+            lat_end = lat_start
+            while lat_end < nlat and global_lat_centers[lat_end] >= min_lat:
+                lat_end += 1
+
+            cell_value = j * we + i
+            for ii in range(lat_start, lat_end):
+                for jj in range(lon_start, lon_end):
+                    if point_in_poly_numba(global_lon2d[ii, jj], global_lat2d[ii, jj], poly_lon, poly_lat):
+                        grid[ii, jj] = cell_value
+    return grid
+
+
+
+def build_cwrf_corners(infil: Dataset,
+                       lons: np.ndarray,
+                       lats: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """
+    构造 CWRF 网格角点坐标。
+
+    本函数优先采用“投影中心点 + DX/DY”方式恢复真实角点；如果投影属性
+    缺失、转换器初始化失败或其他异常发生，则自动退回到中心点近似角点方案。
+
+    参数
+    ----------
+    infil : netCDF4.Dataset
+        已打开的 `geo_em` 文件句柄。
+    lons, lats : np.ndarray
+        二维 CWRF 中心点经纬度数组。
+
+    返回
+    ----------
+    tuple[np.ndarray, np.ndarray]
+        `(lon_corners, lat_corners)`，形状均为 `(ny+1, nx+1)`。
+    """
+    try:
+        dx = float(getattr(infil, "DX"))
+        dy = float(getattr(infil, "DY"))
+        transformer = init_transformer_from_geoem(infil)
+        # netCDF4 读出的变量有时是 MaskedArray；pyproj 不接受该类型，
+        # 这里统一转为普通 ndarray 后再做投影转换。
+        lons_in = np.ma.filled(np.asanyarray(lons), np.nan).astype(np.float64, copy=False)
+        lats_in = np.ma.filled(np.asanyarray(lats), np.nan).astype(np.float64, copy=False)
+        x_center, y_center = transformer.transform(lons_in, lats_in)
+        x_corners, y_corners = generate_grid_corners_numba(x_center, y_center, dx, dy)
+        lon_corners, lat_corners = transformer.transform(x_corners, y_corners, direction="INVERSE")
+        return lon_corners, lat_corners
+    except Exception as e:
+        print(f"投影角点生成失败（{e}），回退为中心点近似角点。")
+        return approximate_corners_from_centers(lons, lats)
+
+
+
+def ocean_mask_from_highres_nc(infil: Dataset,
+                               lons: np.ndarray,
+                               lats: np.ndarray,
+                               land_sea_mask_nc: str,
+                               ocean_threshold: float = 0.5) -> np.ndarray:
+    """
+    使用高分辨率 `land_ocean_mask` 数据聚合生成 CWRF 海洋掩膜。
+
+    该函数是脚本当前的主海陆判定方法。它不再依赖旧的感染算法，而是直接：
+    1. 计算 CWRF 网格角点；
+    2. 从全球高分辨率海陆掩膜中裁剪出覆盖当前域的子区域；
+    3. 将高分像元中心映射到 CWRF 四边形网格；
+    4. 统计每个 CWRF 格点内的海洋像元占比；
+    5. 按 `ocean_threshold` 阈值将粗网格判定为海洋或陆地。
+
+    高分辨率掩膜数据约定：
+    - `0 = ocean`
+    - `1 = land`
+
+    参数
+    ----------
+    infil : netCDF4.Dataset
+        已打开的 `geo_em` 文件句柄，用于读取投影元数据。
+    lons, lats : np.ndarray
+        二维 CWRF 中心点经纬度数组。
+    land_sea_mask_nc : str
+        高分辨率海陆掩膜文件路径。
+    ocean_threshold : float, default=0.5
+        海洋比例阈值。若某个 CWRF 格点内海洋像元比例大于等于该值，
+        则判定为海洋。
+
+    返回
+    ----------
+    np.ndarray
+        二维 `uint8` 海洋掩膜，满足 `1=海洋`、`0=非海洋`。
+
+    异常
+    ----------
+    FileNotFoundError
+        当输入的高分辨率掩膜文件不存在时抛出。
+    ValueError
+        当裁剪后的高分辨率子区域为空时抛出。
+    """
+    if not os.path.isfile(land_sea_mask_nc):
+        raise FileNotFoundError(f"高分辨率海陆掩膜不存在：{land_sea_mask_nc}")
+
+    lon_corners, lat_corners = build_cwrf_corners(infil, lons, lats)
+    latrange, lonrange = get_latlon_range(lat_corners, lon_corners, offset=0.05)
+
+    with xr.open_dataset(land_sea_mask_nc) as ds_mask:
+        if "land_ocean_mask" not in ds_mask:
+            raise KeyError("高分辨率海陆掩膜文件中缺少变量 `land_ocean_mask`。")
+
+        da_mask = ds_mask["land_ocean_mask"]
+        if "lat" not in da_mask.dims or "lon" not in da_mask.dims:
+            raise ValueError("`land_ocean_mask` 必须包含 `lat` 和 `lon` 两个维度。")
+
+        da_mask = da_mask.transpose("lat", "lon")
+        lat_values = da_mask["lat"].values
+        lon_values = da_mask["lon"].values
+
+        lat_ascending = bool(lat_values[0] < lat_values[-1])
+        lon_ascending = bool(lon_values[0] < lon_values[-1])
+        lat_slice = slice(latrange[0], latrange[1]) if lat_ascending else slice(latrange[1], latrange[0])
+        lon_slice = slice(lonrange[0], lonrange[1]) if lon_ascending else slice(lonrange[1], lonrange[0])
+
+        subset = da_mask.sel(lat=lat_slice, lon=lon_slice)
+        hr_mask = subset.values
+        hr_lats = subset["lat"].values
+        hr_lons = subset["lon"].values
+
+    if hr_mask.size == 0:
+        raise ValueError("高分辨率海陆掩膜裁剪后为空，无法进行网格匹配。")
+
+    global_lon2d, global_lat2d = np.meshgrid(hr_lons, hr_lats)
+    elmindex = meshgrid_index_numba(
+        global_lon2d.astype(np.float64),
+        global_lat2d.astype(np.float64),
+        lon_corners.astype(np.float64),
+        lat_corners.astype(np.float64),
+        hr_lons.astype(np.float64),
+        hr_lats.astype(np.float64),
+        0.002,
+    )
+
+    ny, nx = lons.shape
+    ncell = ny * nx
+    valid = elmindex >= 0
+    flat_idx = elmindex[valid].ravel()
+    ocean_hits = (hr_mask[valid] == 0).astype(np.float64).ravel()
+    total_counts = np.bincount(flat_idx, minlength=ncell).astype(np.float64)
+    ocean_counts = np.bincount(flat_idx, weights=ocean_hits, minlength=ncell).astype(np.float64)
+
+    ocean_fraction = np.full(ncell, np.nan, dtype=np.float64)
+    sampled = total_counts > 0
+    ocean_fraction[sampled] = ocean_counts[sampled] / total_counts[sampled]
+
+    if np.any(~sampled):
+        print(f"警告：有 {np.sum(~sampled)} 个 CWRF 格点未命中高分像元，回退为中心点取样。")
+        lat_idx = np.abs(hr_lats[:, None, None] - lats[None, :, :]).argmin(axis=0)
+        lon_idx = np.abs(hr_lons[:, None, None] - lons[None, :, :]).argmin(axis=0)
+        center_land = hr_mask[lat_idx, lon_idx]
+        ocean_fraction[~sampled] = (center_land.ravel()[~sampled] == 0).astype(np.float64)
+
+    return (ocean_fraction.reshape(ny, nx) >= ocean_threshold).astype(np.uint8)
+
+
+
 def ocean_mask_from_shapefile(lons: np.ndarray,
                               lats: np.ndarray,
                               land_shp_path: str) -> np.ndarray:
     """
-    用“陆地多边形”shapefile 判定海陆（1=海, 0=陆）。
-    假设 shapefile 只有一个面要素；尽量走最快的简单路径。
+    使用陆地边界 shapefile 按“点是否落在陆地多边形内”判定海陆。
+
+    这是一个可选的优先方法，适用于用户提供了可信海陆边界矢量的情形。
+    若 shapefile 判定失败，主流程会自动回退到高分辨率 `nc` 掩膜方法。
+
+    约定如下：
+    - 点在陆地多边形内或边界上：判定为陆地；
+    - 点不在陆地多边形内：判定为海洋。
+
+    参数
+    ----------
+    lons, lats : np.ndarray
+        二维 CWRF 中心点经纬度数组。
+    land_shp_path : str
+        陆地边界 shapefile 路径。
+
+    返回
+    ----------
+    np.ndarray
+        二维 `uint8` 海洋掩膜，满足 `1=海洋`、`0=陆地`。
     """
-    import numpy as np
     import geopandas as gpd
     from shapely.geometry import Point
     from shapely.prepared import prep
@@ -65,83 +541,29 @@ def ocean_mask_from_shapefile(lons: np.ndarray,
 
 
 
-def infection_algorithm(scw: np.ndarray,
-                        hgt_m: np.ndarray,
-                        mask: np.ndarray | None = None,
-                        sea_level: float = 0.0,
-                        tol: float = 1e-6,
-                        merge_lakes: bool = True) -> np.ndarray:
-    """
-    从边界所有“海洋候选”(scw==8 且 |hgt_m-sea_level|<=tol)作为多起点做 8 邻域 flood-fill，
-    得到与边界连通的海洋掩膜。若边界上无候选，则返回全 0（本域无海洋）。
-    若 merge_lakes=True，则仅在湖格点同时满足 |hgt_m-sea_level|<=tol 时才并入海洋。
-
-    参数
-    ----
-    scw : 2D SC_WATER 数组
-    hgt_m : 2D 地形高程（米），与 scw 同形状
-    mask : 可选的 0/1 掩膜；缺省则内部创建
-    sea_level : 认为海平面的高程值（默认 0.0）
-    tol : 海平面容差（默认 1e-6；若你的 HGT_M 海面为 0±0.5，可把 tol 设为 0.5）
-    merge_lakes : 是否把满足海平面条件的湖(5/6)并入海
-
-    返回
-    ----
-    mask : 0/1 海洋掩膜（只包含“与边界连通且海拔≈海平面”的海）
-    """
-    scw = np.asarray(scw)
-    hgt_m = np.asarray(hgt_m)
-    assert scw.shape == hgt_m.shape, "scw 与 hgt_m 形状必须一致"
-
-    rows, cols = scw.shape
-    if mask is None:
-        mask = np.zeros((rows, cols), dtype=np.uint8)
-
-    # 海平面判定（数值稳定：允许容差 tol）
-    sea_ok = np.isfinite(hgt_m) & (np.abs(hgt_m - sea_level) <= tol)
-
-    # 1) 收集边界上的“海洋候选”作为种子：scw==8 且 sea_ok
-    seeds = []
-    for j in range(cols):
-        if scw[0, j] == 8 and sea_ok[0, j]:           seeds.append((0, j))
-        if scw[rows-1, j] == 8 and sea_ok[rows-1, j]: seeds.append((rows-1, j))
-    for i in range(rows):
-        if scw[i, 0] == 8 and sea_ok[i, 0]:           seeds.append((i, 0))
-        if scw[i, cols-1] == 8 and sea_ok[i, cols-1]: seeds.append((i, cols-1))
-
-    # 2) 边界无海洋候选：直接返回全 0（本域无海洋）
-    if not seeds:
-        return mask
-
-    # 3) 多源 BFS 泛洪（8 邻域）
-    q = deque(seeds)
-    while q:
-        r, c = q.popleft()
-        if r < 0 or r >= rows or c < 0 or c >= cols or mask[r, c] == 1:
-            continue
-
-        # 只能在“边界海洋候选连通域”内扩张
-        if scw[r, c] == 8 and sea_ok[r, c]:
-            mask[r, c] = 1
-            for dr in (-1, 0, 1):
-                for dc in (-1, 0, 1):
-                    if dr == 0 and dc == 0:
-                        continue
-                    nr, nc = r + dr, c + dc
-                    if 0 <= nr < rows and 0 <= nc < cols:
-                        # 海格点：必须满足 sea_ok 才能扩展
-                        if scw[nr, nc] == 8 and sea_ok[nr, nc] and mask[nr, nc] == 0:
-                            q.append((nr, nc))
-                        # 湖格点：只有在 sea_ok 条件满足且允许并湖时才并入为海
-                        elif merge_lakes and scw[nr, nc] in (5, 6) and sea_ok[nr, nc] and mask[nr, nc] == 0:
-                            scw[nr, nc] = 8  # 就地改为海
-                            q.append((nr, nc))
-    return mask
-
-
-
 @njit(parallel=True, fastmath=True)
 def _fill_land_cells_numba(result, land_mask, n_types, water_idx, land_window):
+    """
+    对非水体格点补齐 `LANDUSEF` 比例，使每个格点最终仍能归一化到 1。
+
+    处理策略分两类：
+    1. 若当前格点已有非水体类别占比，则把剩余比例补到最大类别上；
+    2. 若当前格点所有非水体类别均为 0，则用邻域均值重建类别分布；
+       若邻域也全为 0，则在非水体类别之间均分。
+
+    参数
+    ----------
+    result : np.ndarray
+        待修改的 `LANDUSEF` 三维数组。
+    land_mask : np.ndarray
+        二维布尔掩膜，`True` 表示需要按陆地逻辑修补的格点。
+    n_types : int
+        土地利用类型总数。
+    water_idx : int
+        水体类别索引。
+    land_window : int
+        邻域均值窗口大小，必须为奇数。
+    """
     n_lat, n_lon = result.shape[1], result.shape[2]
     k = land_window // 2
 
@@ -215,17 +637,30 @@ def classify_lakes_3d(landusef: np.ndarray,
                       ocean_mask: np.ndarray,
                       land_window: int = 3) -> np.ndarray:
     """
-    对三维土地利用比例数据进行湖泊分类和海洋掩膜处理，并归一化各类比例。
+    根据湖泊掩膜与海洋掩膜重建 `LANDUSEF` 的水体层，并保证每个格点比例和为 1。
 
-    参数：
-    :param landusef: 三维数组，形状为 (n_types, n_lat, n_lon)，表示各土地利用类型的比例。
-                     第16层（索引15）原为水体比例，将重新计算。
-    :param ocean_mask: 二维数组，形状为 (n_lat, n_lon)，海洋格点标记（可为 0/1 或布尔）。
-    :param threshold: 湖泊比例阈值，超过该值的格点视为湖泊（0-1）。
-    :param land_window: 用于邻域均值计算的窗口大小，必须为奇数。
+    本函数负责把新的海洋/湖泊判定同步回三维土地利用比例数组：
+    - 海洋格点：水体层设为 1，其余类别清零；
+    - 湖泊格点：水体层设为 1，其余类别清零；
+    - 其余陆地格点：重新调整非水体类别比例，保证总和为 1。
 
-    返回：
-    :return: 经调整后并归一化的三维土地利用比例数组。
+    参数
+    ----------
+    landusef : np.ndarray
+        原始三维土地利用比例数组，形状为 `(n_types, n_lat, n_lon)`。
+        其中索引 15 为水体层。
+    lake_mask : np.ndarray
+        二维湖泊掩膜，非零表示湖泊。
+    ocean_mask : np.ndarray
+        二维海洋掩膜，非零表示海洋。
+    land_window : int, default=3
+        修补陆地类别时使用的邻域窗口大小，必须为奇数。
+
+    返回
+    ----------
+    np.ndarray
+        调整后的三维土地利用比例数组，形状与 `landusef` 相同，
+        且每个格点沿类型维的和严格为 1。
     """
     # 检查窗口大小是否为奇数
     if land_window % 2 == 0:
@@ -262,35 +697,6 @@ def classify_lakes_3d(landusef: np.ndarray,
     land_mask = np.ascontiguousarray(land_mask.astype(np.bool_))
     _fill_land_cells_numba(result, land_mask, n_types, water_idx=15, land_window=land_window)
 
-    # # 处理剩余陆地格点
-    # for i in range(n_lat):
-    #     for j in range(n_lon):
-    #         if not land_mask[i, j]:
-    #             continue
-    #         # 排除水体层，计算其他类型总和
-    #         others = result[:, i, j].copy()
-    #         others[15] = 0.0
-    #         total_others = others.sum()
-    #         if total_others > 0:
-    #             # 存在其他类型，则找到最大比例的类型，补充至总和=1
-    #             max_idx = np.argmax(others)
-    #             result[max_idx, i, j] = 1.0 - others.sum() + others[max_idx]
-    #             # 修正范围
-    #             result[:, i, j] = np.clip(result[:, i, j], 0.0, 1.0)
-    #         else:
-    #             # 无其他类型：用邻域均值填充
-    #             k = land_window // 2
-    #             i0, i1 = max(0, i-k), min(n_lat, i+k+1)
-    #             j0, j1 = max(0, j-k), min(n_lon, j+k+1)
-    #             local = result[:, i0:i1, j0:j1]
-    #             mean_props = local.reshape(n_types, -1).mean(axis=1)
-    #             mean_props[15] = 0.0
-    #             total_mean = mean_props.sum()
-    #             if total_mean > 0:
-    #                 result[:, i, j] = mean_props / total_mean
-    #             else:
-    #                 result[:-1, i, j] = 1.0 / (n_types - 1)
-
     # 全局归一化，确保每个格点和为1
     sums = result.sum(axis=0)
     result = result / sums
@@ -310,10 +716,22 @@ def classify_lakes_3d(landusef: np.ndarray,
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
     argparser.add_argument('-lk', '--lake_threshold', type=float, help='lake threshold', required=True)
-    argparser.add_argument('-lsbdy', '--land_and_sea_bdy', type=str, help='land and sea boundary shapefile', default=None)
+    argparser.add_argument('-lsbdy', '--land_and_sea', type=str, help='land and sea boundary (shapefile or netcdf [0=sea,1=land])', default='land_ocean_mask_igbp_2020.nc')
     args = argparser.parse_args()
     lake_threshold = args.lake_threshold
-    land_and_sea_bdy = args.land_and_sea_bdy
+    land_and_sea = args.land_and_sea
+
+    land_and_sea_shp = None
+    land_sea_mask_nc = None
+    land_and_sea_suffix = os.path.splitext(land_and_sea)[1].lower()
+
+    if land_and_sea_suffix == '.shp':
+        print(f"使用边界文件进行海陆判定：{land_and_sea}")
+        land_and_sea_shp = land_and_sea
+        land_sea_mask_nc = 'land_ocean_mask_igbp_2020.nc'
+    else:
+        print(f"使用高分辨率海陆掩膜进行海陆判定：{land_and_sea}")
+        land_sea_mask_nc = land_and_sea
     time0 = time.time()
 
     # 打开 geo_em 文件
@@ -341,7 +759,6 @@ if __name__ == "__main__":
     slpxgrid = infil.variables["slpxgrid"][:].squeeze()
     slpygrid = infil.variables["slpygrid"][:].squeeze()
     landusef = infil.variables["LANDUSEF"][:].squeeze()
-    hgt_m = infil.variables["HGT_M"][:].squeeze()
     lons = infil.variables["XLONG_M"][0, :, :].squeeze()  # CLONG
     lats = infil.variables["XLAT_M"][0, :, :].squeeze()   # CLAT
     print(f"数据读取完毕，耗时 {time.time()-time0:.1f} 秒")
@@ -373,19 +790,23 @@ if __name__ == "__main__":
     print(f"湖泊深度和比例调整完毕，耗时 {time.time()-time1:.1f} 秒")
     time2 = time.time()
 
-    # 修正内陆出现的海洋区域（两种方法二选一）
-    rows, cols = scwcopy.shape
-    if land_and_sea_bdy is not None and os.path.isfile(land_and_sea_bdy):
+    # 修正海陆边界：优先 shapefile，失败或未提供则使用高分辨率海陆掩膜
+    if land_and_sea_shp is not None and os.path.isfile(land_and_sea_shp):
         print(f"[Method-1] 使用边界文件进行海陆判定（点在陆地面外 => 海洋）")
-        print(f"           边界文件：{land_and_sea_bdy}")
+        print(f"           边界文件：{land_and_sea_shp}")
         try:
-            mask = ocean_mask_from_shapefile(lons, lats, land_and_sea_bdy)  # 1/0 掩膜
+            mask = ocean_mask_from_shapefile(lons, lats, land_and_sea_shp)  # 1/0 掩膜
         except Exception as e:
-            print(f"边界文件判定失败（{e}），回退到感染算法 [Method-2].")
-            mask = infection_algorithm(scwcopy.squeeze(), hgt_m=hgt_m, sea_level=0.0, tol=0.01, merge_lakes=True)
+            print(f"边界文件判定失败（{e}），回退到高分辨率海陆掩膜 [Method-2].")
+            print(f"           掩膜文件：{land_sea_mask_nc}")
+            mask = ocean_mask_from_highres_nc(infil, lons, lats, land_sea_mask_nc, ocean_threshold=0.5)
     else:
-        print("[Method-2] 未提供边界文件或文件不存在，使用感染算法（边界连通 + HGT≈0）")
-        mask = infection_algorithm(scwcopy.squeeze(), hgt_m=hgt_m, sea_level=0.0, tol=0.01, merge_lakes=True)
+        print("[Method-2] 未提供边界文件或文件不存在，使用高分辨率海陆掩膜（海洋比例 >= 0.5 判海）")
+        print(f"           掩膜文件：{land_sea_mask_nc}")
+        mask = ocean_mask_from_highres_nc(infil, lons, lats, land_sea_mask_nc, ocean_threshold=0.5)
+    # 外部 shp/nc 先给出海陆主判定；这里再用 LANDUSEF 做一次保守回修。
+    # 若某格点虽然已被外部边界判为海洋，但现有 LANDUSEF 的非水体比例仍显著偏高，
+    # 则允许 LANDUSEF 否决该海洋判定，并把该格点翻回陆地。
     newocemask = refine_ocean_with_landuse(mask, landusef, land_threshold=0.5, water_index=15)
     
     # 更新 SC_WATER

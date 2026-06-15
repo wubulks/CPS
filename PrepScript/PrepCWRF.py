@@ -14,7 +14,7 @@ Description   : Handles the data preparation workflow for the CWRF atmospheric
 
 Author        : Omarjan @ SYSU
 Created       : 2025-05-25
-Last Modified : 2026-03-04
+Last Modified : 2026-06-15
 ===============================================================================
 """
 
@@ -43,6 +43,7 @@ def First_StaticData(casecfg, envcfg, gridname):
     GlobalLakeDepth = envcfg.get('Paths', 'GlobalLakeDepth')
     GlobalLakeStatus = envcfg.get('Paths', 'GlobalLakeStatus')
     GeogDataPath = envcfg.get('Paths', 'GeogDataPath')
+    LandSeaMaskPath = envcfg.get('Paths', 'LandSeaMaskPath')
     NCOPath = envcfg.get('Paths', 'NCOPath')
     CDOPath = envcfg.get('Paths', 'CDOPath')
     NCLPath = envcfg.get('Paths', 'NCLPath')
@@ -60,6 +61,7 @@ def First_StaticData(casecfg, envcfg, gridname):
     Go_IGBP = casecfg.getboolean('PrepCWRF', 'Go_IGBP')
     Collect_GeogData = casecfg.getboolean('PrepCWRF', 'Collect_GeogData')
     Use_CoLMLAI = casecfg.getboolean('BaseInfo', 'Use_CoLMLAI')
+    Use_CoLMSeaMask = casecfg.getboolean('BaseInfo', 'Use_CoLMSeaMask')
     StartTime = datetime.strptime(StartTime, '%Y-%m-%d_%H:%M:%S')
     EndTime = datetime.strptime(EndTime, '%Y-%m-%d_%H:%M:%S')
     dx_WE = casecfg.get(gridname, 'dx_WE')
@@ -73,7 +75,7 @@ def First_StaticData(casecfg, envcfg, gridname):
     CWPSNMLPath = f'{CaseOutputPath}/{gridname}/NMLS/namelist.cwps.{gridname}'
     CWRFNMLPath = f'{CaseOutputPath}/{gridname}/NMLS/namelist.cwrf.{gridname}'
     maxmin_wgs = Tools.Get_Area_MaxMin_Coords(casecfg, gridname)
-    SinGridList = Tools.Build_SinGridList_From_MaxMinWGS(maxmin_wgs, Expand_Deg = 2.0, Return_String = True)
+    SinGridList = Tools.Build_SinGridList_From_MaxMinWGS(maxmin_wgs, Expand_Deg = 20, Return_String = True)
     chaomodisenv = envcfg.get('Environment', 'CONDA_CHAO')
     SYS_CWRF = envcfg.get('Environment', 'SYS_CWRF')
 
@@ -98,6 +100,10 @@ def First_StaticData(casecfg, envcfg, gridname):
             # link global lake status data
             Tools.Link(f'{GlobalLakeStatus}', f'{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/Geogrid/GlobalLakeStatus.dat')
             
+            # link global lake status data
+            Tools.Link(f'{LandSeaMaskPath}/land_ocean_mask_igbp_2020.nc', f'{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/Geogrid/land_ocean_mask_igbp_2020.nc')
+            Tools.Link(f'{LandSeaMaskPath}/world_union.shp', f'{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/Geogrid/world_union.shp')
+
             # run geogrid.exe and wait for it to finish
             log_file = f'{CaseOutputPath}/{gridname}/Log/log.geogrid'
             cmd = f'mpirun -n {CWRFCoreNum} ./geogrid.exe > {log_file} 2>&1'
@@ -112,8 +118,10 @@ def First_StaticData(casecfg, envcfg, gridname):
             Tools.Copy('geo_em.d01.nc', 'geo_em.d01.bck.nc')
 
             # run CorrectGeoEM.py
-            # LandSeaMask = 'world_union.shp'
-            LandSeaMask = f'{GeogDataPath}/Land-and-sea-boundary-data/world_union.shp'
+            if Use_CoLMSeaMask:
+                LandSeaMask = 'land_ocean_mask_igbp_2020.nc'
+            else:
+                LandSeaMask = 'world_union.shp'
             log_file = f'{CaseOutputPath}/{gridname}/Log/log.CorrectGeoEM'
             cmd = f'conda run -n {xesmfenv} --no-capture-output python -u CorrectGeoEM.py -lk {LakeThreshold} -lsbdy {LandSeaMask} > {log_file} 2>&1'
             Tools.Run_CMD(cmd, "Run CorrectGeoEM.py")
@@ -166,6 +174,7 @@ def First_StaticData(casecfg, envcfg, gridname):
             syears = 2000  # Hardcoded to cover all MODIS data
             eyears = 2023  # Hardcoded to cover all MODIS data
             cmd = f'conda run -n {chaomodisenv} --no-capture-output python -u MODIS2CWRF.py -hvs "{SinGridList}" -YS {syears} -YE {eyears} > {log_file} 2>&1'
+            print(cmd)
             Tools.Run_CMD(cmd, "Run MODIS2CWRF.py")
 
             # Check FVC files
@@ -827,6 +836,5 @@ def Gather_CWRF_Output(casecfg, envcfg, gridname):
         logger.info(f'{Consts.S4}==========> Skip Copy PrepCWRF Result <==========')
         logger.info(f'{Consts.S4}!!! Skip the whole process !!!\n\n')
     os.chdir(old_path)
-
 
 

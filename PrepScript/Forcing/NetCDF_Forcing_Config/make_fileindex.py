@@ -200,7 +200,7 @@ def DetectMissing(config, df: pd.DataFrame, dataname: str):
         tres = config.get(var, "TemporalRes").strip()
         cat, step = _parse_temporal_res(tres)
 
-        related = df[df["Variables"].str.contains(varname, na=False)]
+        related = df[df["Variables"].fillna("").apply(lambda s: varname in [v.strip() for v in s.split(",")])]
         if related.empty:
             logging.warning("[%s] No file found containing variable '%s'", var, varname)
             continue

@@ -20,8 +20,8 @@ Author        : Omarjan
 Institution   : School of Atmospheric Sciences, Sun Yat-sen University (SYSU)
 
 Created       : 2025-05-25
-Last Modified : 2026-03-04
-Version       : 1.2.2
+Last Modified : 2026-06-15
+Version       : 1.2.3
 
 Conda Environments Required:
     - cresm     : /home/wumej22/anaconda3/envs/cresm
@@ -34,7 +34,7 @@ Usage:
 ===============================================================================
 """
 
-__version__ = "1.2.2"
+__version__ = "1.2.3"
 
 import os
 import sys
@@ -126,12 +126,20 @@ def Modify_Config(casecfg, gridname, year=None):
     if start_time >= end_time:
         print(f"{Consts.S4}StartTime must be less than EndTime.")
         raise ValueError(f"StartTime must be earlier than EndTime: {start_time_str} >= {end_time_str}")
+
+    year_diff = end_time.year - start_time.year
     
     key = 'Time'
     formatted_key = key.ljust(17)
     print(f"{Consts.S6}{formatted_key}: {start_time_str} - {end_time_str}\n")
-    new_start_time = start_time.replace(year=year, month=1, day=1, hour=0, minute=0, second=0)
-    new_end_time = end_time.replace(year=year+1, month=1, day=3, hour=0, minute=0, second=0)
+    new_start_time = start_time.replace(year=year, month=start_time.month, day=start_time.day, hour=start_time.hour, minute=start_time.minute, second=start_time.second)
+    new_end_time = end_time.replace(year=year+year_diff, month=end_time.month, day=end_time.day, hour=end_time.hour, minute=end_time.minute, second=end_time.second)
+    new_start_time_str = new_start_time.strftime('%Y-%m-%d_%H:%M:%S')
+    new_end_time_str = new_end_time.strftime('%Y-%m-%d_%H:%M:%S')
+    
+    if new_start_time >= new_end_time:
+        print(f"{Consts.S4}StartTime must be less than EndTime.")
+        raise ValueError(f"StartTime must be earlier than EndTime: {new_start_time_str} >= {new_end_time_str}")
     casecfg.set(new_section, 'StartTime', new_start_time.strftime('%Y-%m-%d_%H:%M:%S'))
     casecfg.set(new_section, 'EndTime', new_end_time.strftime('%Y-%m-%d_%H:%M:%S'))
     gridname = new_section
@@ -199,7 +207,8 @@ def Check_AllConfig(case_cfg, env_cfg, gridname, level='INFO'):
         ('PrepCoLM', 'Go_CoLMTempRun'), ('PrepCoLM', 'Go_Remap'), ('PrepCoLM', 'Copy_CoLM_Output'),
         # BaseInfo & Others
         ('BaseInfo', 'CleanTempFiles'), ('BaseInfo', 'Enable_TimeChunk'),
-        ('GatherData', 'Collect_CWRF_Output'), ('GatherData', 'Collect_CoLM_Output')
+        ('GatherData', 'Collect_CWRF_Output'), ('GatherData', 'Collect_CoLM_Output'),
+        ('BaseInfo', 'Use_CoLMLAI'), ('BaseInfo', 'Use_CoLMSeaMask')
     ]
 
     # [C] 数值与逻辑检查列表 (Section, Key, ValidatorLambda, ErrorMsg)
@@ -220,8 +229,8 @@ def Check_AllConfig(case_cfg, env_cfg, gridname, level='INFO'):
     # [D] 必须存在的 Env 路径 Key (Env Config [Paths])
     PATH_CHECKS = [
         'ScriptPath', 'CoLMModelPath', 'CoLMRawDataPath', 'CoLMRunDataPath', 
-        'CoLMForcingPath', 'RootToolBox', 'CWPSPath', 'CWRFToolPath', 
-        'GeogDataPath', 'CWPSStaticPath', 'GlobalLakeDepth', 'GlobalLakeStatus',
+        'CoLMForcingPath', 'RootToolBox', 'CWPSPath', 'CWRFToolPath', 'GeogDataPath', 'LandSeaMaskPath',
+         'CWPSStaticPath', 'GlobalLakeDepth', 'GlobalLakeStatus',
         'NCOPath', 'CDOPath', 'NCLPath'
     ]
     ENV_CHECKS = ['SYS_CWRF', 'SYS_CoLM', 
@@ -1309,7 +1318,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         '-v', '--version',
         action='version',
-        version='%(prog)s 1.0.0',
+        version='%(prog)s 1.2.3',
         help='Show version information and exit\n'
     )
 
@@ -1551,4 +1560,3 @@ def main(argv=None):
 
 if __name__ == "__main__":
     sys.exit(main())
-
