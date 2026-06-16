@@ -68,35 +68,6 @@ print(f"sl_lu: {np.sum(sl_lu)}")
 
 
 
-# # 修正 SC_WATER
-# newluindex = lu_index.copy()
-# newscwater = np.zeros_like(scwater)
-# newscwater = np.where(newluindex != 16, 2, newscwater)
-# newscwater = np.where((newluindex == 16) & (dplake > 20), 6, newscwater)
-# newscwater = np.where((newluindex == 16) & (dplake <= 20) & (dplake > 0), 5, newscwater)
-# newscwater = np.where((newluindex == 16) & (dplake == 0), 8, newscwater)
-# newocemask = np.where(newscwater == 8, 1, 0)
-# diff = newocemask - oceanmask
-# addocean = np.where(diff == 1, 1, 0)
-# if np.sum(addocean) > 0:
-#     print(f"新增海洋区域：{np.sum(addocean)}")
-#     print("新增海洋区域不合理！")
-#     newscwater[addocean == 1] = 2
-#     newluindex = np.where(addocean == 1, 6, newluindex)
-
-# newxoro = np.where(newluindex == 16, 0, 1)
-# newlandmask = np.where(newluindex == 16, 0, 1)
-# newxlandmask = np.where(newluindex == 16, 0, 1)
-# newxland = np.where(newluindex == 16, 2, 1)
-# newlandf = np.where(newluindex == 16, 0, landf)
-# newlandf = np.where((newluindex != 16) & (landf == 0), 0.99, newlandf)
-# newsc_landu = newluindex
-# newvegfra = np.where(newluindex == 16, 0, vegfra)
-# newvegfra = np.where((newluindex != 16) & (vegfra == 0), 0.5, newvegfra)
-# newxfveg = np.where(newluindex == 16, 0, xfveg)
-# newxfveg = np.where((newluindex != 16) & (xfveg == 0), 0.5, newxfveg)
-
-
 # 修正 SC_WATER
 newluindex = lu_index.copy()
 print((xlandmask == 0) & (newluindex != 16))
@@ -252,3 +223,51 @@ print("Water data has been successfully updated!")
 
 # print("Soil data has been successfully updated!")
 
+
+# ###################################################
+# #         独立追加: 逐句翻译 chanlu.ncl 修正
+# ###################################################
+print("\nStart chanlu.ncl-equivalent correction...")
+
+suffix = "d01"
+with Dataset(f"./wrfinput_{suffix}", mode="r+") as infile, \
+     Dataset(f"./geo_em.{suffix}.nc", mode="r") as geofile, \
+     Dataset(f"./MODIS2CWRF_SBC_{suffix}.nc", mode="r") as fvcfile:
+
+    lu = geofile.variables["LU_INDEX"][:]
+    fvc = fvcfile.variables["FVC"][:, 0, :, :]
+
+    oldfvc = infile.variables["XFVEG"][:]
+    oldfvc[:, :, :] = fvc
+
+    xland = infile.variables["LANDMASK"][:]
+    scw = infile.variables["SC_WATER"][:]
+
+    inconsisten_scw_xland = np.where((scw <= 3) & (xland == 0), 1, 0)
+    inconsisten_xfveg_xland = np.where((fvc > 0) & (xland == 0), 1, 0)
+
+    oldfvc = np.where((oldfvc > 0) & (lu == 16), 0, oldfvc)
+    oldfvc = np.where(oldfvc < 0, 0, oldfvc)
+    inconsisten_fvc_lu = np.where((fvc > 0) & (lu == 16), 1, 0)
+    inconsisten_ldm_lu = np.where((xland != 0) & (lu == 16), 1, 0)
+
+    # NCL where() 在缺测值上会传播 missing；这里显式归零，保持原脚本语义。
+    inconsisten_fvc_lu = np.where(np.ma.getmaskarray(inconsisten_fvc_lu), 0, inconsisten_fvc_lu)
+    inconsisten_ldm_lu = np.where(np.ma.getmaskarray(inconsisten_ldm_lu), 0, inconsisten_ldm_lu)
+
+    lu = np.where((inconsisten_fvc_lu == 1) | (inconsisten_ldm_lu == 1), 7, lu)
+    lu = np.where(lu == 24, 22, lu)
+    scw = np.where((scw == 0) & (lu == 16), 8, scw)
+
+    infile.variables["LU_INDEX"][:] = lu
+    infile.variables["SC_WATER"][:] = scw
+    infile.variables["SC_LANDU"][:] = lu
+    infile.variables["IVGTYP"][:] = lu.astype("i4")
+    infile.variables["XFVEG"][:] = oldfvc
+
+    print(f"chanlu scw/xland inconsistencies: {int(np.sum(inconsisten_scw_xland))}")
+    print(f"chanlu xfveg/xland inconsistencies: {int(np.sum(inconsisten_xfveg_xland))}")
+    print(f"chanlu fvc/lu inconsistencies: {int(np.sum(inconsisten_fvc_lu))}")
+    print(f"chanlu landmask/lu inconsistencies: {int(np.sum(inconsisten_ldm_lu))}")
+
+print("chanlu.ncl-equivalent correction has been successfully applied!")

@@ -184,20 +184,20 @@ cd /hydata01/wumej22/CPS/PrepScript
 /stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 1998 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
 # /stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 1999 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
 # /stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2000 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
-/stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2000 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
-/stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2001 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
-/stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2002 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
-/stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2003 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
-/stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2004 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
-/stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2005 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
-/stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2006 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
-/stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2007 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
-/stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2008 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
-/stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2009 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
-/stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2010 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
-/stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2011 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
-/stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2012 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
-/stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2013 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
+# /stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2000 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
+# /stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2001 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
+# /stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2002 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
+# /stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2003 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
+# /stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2004 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
+# /stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2005 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
+# /stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2006 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
+# /stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2007 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
+# /stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2008 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
+# /stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2009 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
+# /stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2010 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
+# /stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2011 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
+# /stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2012 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
+# /stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2013 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
 /stu01/wumej22/Anaconda3/envs/cresm/bin/python CRESM_Preprocessing_System.py -n Yangtze_C_6km_CESM2_hist -y 2014 -g /hydata01/wumej22/Geog_Yangtze_C_6km_MPI
 
 

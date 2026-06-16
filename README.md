@@ -1,6 +1,6 @@
 # CRESM Preprocessing System (CPS)
 
-## **Version: v1.2.3**
+## **Version: v1.2.4**
 
 [![License: GPL](https://img.shields.io/badge/License-GPL-blue.svg)](#license)
 [![Platform: Linux](https://img.shields.io/badge/Platform-Linux-success.svg)](#requirements)
@@ -27,6 +27,12 @@ CPS 是为新一代国产区域地球系统模式 **CRESM** 开发的数据前�
 ---
 
 ## 更新日志
+
+### v1.2.4
+- 优化了海陆边界矢量数据的使用方式，统一切换到更稳健的 `world_union.gpkg`，提升静态地理场海陆判定的可移植性与稳定性。
+- 在 `PostCorrect.py` 中补充并独立纳入了 `chanlu.ncl` 的关键修正逻辑，使 `LU_INDEX`、`XFVEG`、`SC_LANDU` 与 `IVGTYP` 的后处理更加一致。
+- 在 `PostCorrect.py` 中新增了针对海冰/水体分类的 `SC_WATER` 一致性修正，进一步改进海陆过渡区与特殊水体类别的处理结果。
+- 新增并整理了 Intel 与 GNU 两套编译器路径配置，完成了相关编译流程与模拟效果测试，增强了不同编译环境下的可用性。
 
 ### v1.2.3
 - 改进了 `CRESM_Preprocessing_System.py` 的按年重配置逻辑：在切换实验年份时保留原始月、日和时分秒信息，并增加起止时间合法性检查，避免生成无效时间范围。

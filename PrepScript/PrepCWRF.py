@@ -14,7 +14,7 @@ Description   : Handles the data preparation workflow for the CWRF atmospheric
 
 Author        : Omarjan @ SYSU
 Created       : 2025-05-25
-Last Modified : 2026-06-15
+Last Modified : 2026-06-16
 ===============================================================================
 """
 
@@ -102,7 +102,7 @@ def First_StaticData(casecfg, envcfg, gridname):
             
             # link global lake status data
             Tools.Link(f'{LandSeaMaskPath}/land_ocean_mask_igbp_2020.nc', f'{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/Geogrid/land_ocean_mask_igbp_2020.nc')
-            Tools.Link(f'{LandSeaMaskPath}/world_union.shp', f'{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/Geogrid/world_union.shp')
+            Tools.Link(f'{LandSeaMaskPath}/world_union.gpkg', f'{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/Geogrid/world_union.gpkg')
 
             # run geogrid.exe and wait for it to finish
             log_file = f'{CaseOutputPath}/{gridname}/Log/log.geogrid'
@@ -121,7 +121,7 @@ def First_StaticData(casecfg, envcfg, gridname):
             if Use_CoLMSeaMask:
                 LandSeaMask = 'land_ocean_mask_igbp_2020.nc'
             else:
-                LandSeaMask = 'world_union.shp'
+                LandSeaMask = 'world_union.gpkg'
             log_file = f'{CaseOutputPath}/{gridname}/Log/log.CorrectGeoEM'
             cmd = f'conda run -n {xesmfenv} --no-capture-output python -u CorrectGeoEM.py -lk {LakeThreshold} -lsbdy {LandSeaMask} > {log_file} 2>&1'
             Tools.Run_CMD(cmd, "Run CorrectGeoEM.py")
@@ -836,5 +836,4 @@ def Gather_CWRF_Output(casecfg, envcfg, gridname):
         logger.info(f'{Consts.S4}==========> Skip Copy PrepCWRF Result <==========')
         logger.info(f'{Consts.S4}!!! Skip the whole process !!!\n\n')
     os.chdir(old_path)
-
 

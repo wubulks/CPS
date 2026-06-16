@@ -20,8 +20,8 @@ Author        : Omarjan
 Institution   : School of Atmospheric Sciences, Sun Yat-sen University (SYSU)
 
 Created       : 2025-05-25
-Last Modified : 2026-06-15
-Version       : 1.2.3
+Last Modified : 2026-06-16
+Version       : 1.2.4
 
 Conda Environments Required:
     - cresm     : /home/wumej22/anaconda3/envs/cresm
@@ -34,7 +34,7 @@ Usage:
 ===============================================================================
 """
 
-__version__ = "1.2.3"
+__version__ = "1.2.4"
 
 import os
 import sys
@@ -1318,7 +1318,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         '-v', '--version',
         action='version',
-        version='%(prog)s 1.2.3',
+        version='%(prog)s 1.2.4',
         help='Show version information and exit\n'
     )
 

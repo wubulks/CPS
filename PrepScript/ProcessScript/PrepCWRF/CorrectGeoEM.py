@@ -494,10 +494,10 @@ def ocean_mask_from_shapefile(lons: np.ndarray,
                               lats: np.ndarray,
                               land_shp_path: str) -> np.ndarray:
     """
-    使用陆地边界 shapefile 按“点是否落在陆地多边形内”判定海陆。
+    使用陆地边界矢量文件按“点是否落在陆地多边形内”判定海陆。
 
     这是一个可选的优先方法，适用于用户提供了可信海陆边界矢量的情形。
-    若 shapefile 判定失败，主流程会自动回退到高分辨率 `nc` 掩膜方法。
+    若矢量判定失败，主流程会自动回退到高分辨率 `nc` 掩膜方法。
 
     约定如下：
     - 点在陆地多边形内或边界上：判定为陆地；
@@ -508,7 +508,7 @@ def ocean_mask_from_shapefile(lons: np.ndarray,
     lons, lats : np.ndarray
         二维 CWRF 中心点经纬度数组。
     land_shp_path : str
-        陆地边界 shapefile 路径。
+        陆地边界矢量文件路径，例如 `.gpkg` 或 `.shp`。
 
     返回
     ----------
@@ -716,7 +716,7 @@ def classify_lakes_3d(landusef: np.ndarray,
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
     argparser.add_argument('-lk', '--lake_threshold', type=float, help='lake threshold', required=True)
-    argparser.add_argument('-lsbdy', '--land_and_sea', type=str, help='land and sea boundary (shapefile or netcdf [0=sea,1=land])', default='land_ocean_mask_igbp_2020.nc')
+    argparser.add_argument('-lsbdy', '--land_and_sea', type=str, help='land and sea boundary (vector file like .gpkg/.shp, or netcdf [0=sea,1=land])', default='land_ocean_mask_igbp_2020.nc')
     args = argparser.parse_args()
     lake_threshold = args.lake_threshold
     land_and_sea = args.land_and_sea
@@ -725,8 +725,8 @@ if __name__ == "__main__":
     land_sea_mask_nc = None
     land_and_sea_suffix = os.path.splitext(land_and_sea)[1].lower()
 
-    if land_and_sea_suffix == '.shp':
-        print(f"使用边界文件进行海陆判定：{land_and_sea}")
+    if land_and_sea_suffix in {'.shp', '.gpkg'}:
+        print(f"使用矢量边界文件进行海陆判定：{land_and_sea}")
         land_and_sea_shp = land_and_sea
         land_sea_mask_nc = 'land_ocean_mask_igbp_2020.nc'
     else:
@@ -790,18 +790,18 @@ if __name__ == "__main__":
     print(f"湖泊深度和比例调整完毕，耗时 {time.time()-time1:.1f} 秒")
     time2 = time.time()
 
-    # 修正海陆边界：优先 shapefile，失败或未提供则使用高分辨率海陆掩膜
+    # 修正海陆边界：优先矢量边界文件，失败或未提供则使用高分辨率海陆掩膜
     if land_and_sea_shp is not None and os.path.isfile(land_and_sea_shp):
-        print(f"[Method-1] 使用边界文件进行海陆判定（点在陆地面外 => 海洋）")
+        print(f"[Method-1] 使用矢量边界文件进行海陆判定（点在陆地面外 => 海洋）")
         print(f"           边界文件：{land_and_sea_shp}")
         try:
             mask = ocean_mask_from_shapefile(lons, lats, land_and_sea_shp)  # 1/0 掩膜
         except Exception as e:
-            print(f"边界文件判定失败（{e}），回退到高分辨率海陆掩膜 [Method-2].")
+            print(f"矢量边界文件判定失败（{e}），回退到高分辨率海陆掩膜 [Method-2].")
             print(f"           掩膜文件：{land_sea_mask_nc}")
             mask = ocean_mask_from_highres_nc(infil, lons, lats, land_sea_mask_nc, ocean_threshold=0.5)
     else:
-        print("[Method-2] 未提供边界文件或文件不存在，使用高分辨率海陆掩膜（海洋比例 >= 0.5 判海）")
+        print("[Method-2] 未提供矢量边界文件或文件不存在，使用高分辨率海陆掩膜（海洋比例 >= 0.5 判海）")
         print(f"           掩膜文件：{land_sea_mask_nc}")
         mask = ocean_mask_from_highres_nc(infil, lons, lats, land_sea_mask_nc, ocean_threshold=0.5)
     # 外部 shp/nc 先给出海陆主判定；这里再用 LANDUSEF 做一次保守回修。

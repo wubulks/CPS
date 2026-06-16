@@ -25,5 +25,5 @@ S28 = " "*28
 UseExternalEnv = False
 # ==========> Global Variables <==========
 author = "Omarjan @ SYSU"
-version = "v1.2.3"
-last_modified = "2026-06-15"
+version = "v1.2.4"
+last_modified = "2026-06-16"

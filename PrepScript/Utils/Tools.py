@@ -13,7 +13,7 @@ Description   : Core utility library for CRESM Data Preparation.
 
 Author        : Omarjan @ SYSU
 Created       : 2025-05-25
-Last Modified : 2026-06-15
+Last Modified : 2026-06-16
 ===============================================================================
 """
 
@@ -981,7 +981,7 @@ def Print_Config_Help():
                CRESM Preprocessing System (CPS) Configuration Help
 ================================================================================
 Author: Omarjan @ SYSU
-Version: v1.2.3
+Version: v1.2.4
 
 This tool relies on two configuration files:
   1. case.ini : Experiment workflow and domain settings (Varies per case).
@@ -1167,7 +1167,7 @@ CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid
     # =========================
     def print_overview(
         author="Omarjan @ SYSU",
-        version="v1.2.3",
+        version="v1.2.4",
         date="2025-05-25",
         envs=None,
     ):
@@ -1380,4 +1380,3 @@ CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid
     # Footer：短 Rule + End 文本（宽度=100）
     short_rule(title="End of Help", width=MAX_WIDTH, style="magenta", title_style="bold magenta", align="center", char="━")
     console.print()
-

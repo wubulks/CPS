@@ -12,7 +12,7 @@ Description   : Prepares necessary files for the CRESM coupler (CPL7/CIME).
 
 Author        : Omarjan @ SYSU
 Created       : 2025-05-25
-Last Modified : 2026-06-15
+Last Modified : 2026-06-16
 ===============================================================================
 """
 
@@ -107,4 +107,3 @@ def Coupler_Prep(casecfg, envcfg, gridname):
     logger.info(f'{Consts.S4}◉  Prepare For CPL7 Data Finished!\n\n')
     os.chdir(old_path)
     
-
