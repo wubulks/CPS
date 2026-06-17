@@ -428,7 +428,7 @@ def Third_Remap(casecfg, envcfg, gridname):
         # cp remap file
         file = remapfiles[0] # get the first remap file
         Tools.Copy(file, f'./CoLM_ref_{gridname}.nc')
-        # Tools.Copy(f'./unstructured_cwrf_{gridname}/landdata/diag/htop_patch_2020.nc', f'./htop_patch_2020_{gridname}.nc')
+        Tools.Copy(f'./unstructured_cwrf_{gridname}/landdata/diag/htop_patch_2020.nc', f'./htop_patch_2020_{gridname}.nc')
 
         # generate glmask
         log_file = f'{CaseOutputPath}/{gridname}/Log/log.remap'

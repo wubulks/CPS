@@ -8,3 +8,6 @@ DataPrepare.*
 # Python bytecode / cache files
 *.pyc
 __pycache__/
+
+# Local job launcher script
+PrepScript/subjob.sh
