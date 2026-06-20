@@ -26,7 +26,7 @@ def refine_ocean_with_landuse(mask: np.ndarray,
     landusef : np.ndarray
         三维土地利用比例数组，形状必须为 `(n_types, n_lat, n_lon)`。
     land_threshold : float, default=0.5
-        陆地比例阈值。仅当非水体类别总和严格大于该阈值时，
+        陆地比例阈值。仅当非水体类别总和大于等于该阈值时，
         海洋格点才会被翻转为陆地。
     water_index : int, default=15
         水体类别在 `LANDUSEF` 第一维中的索引。
@@ -43,7 +43,7 @@ def refine_ocean_with_landuse(mask: np.ndarray,
     # 陆地比例总和 = 所有类型之和 - 水体比例（第 water_index 层）
     land_sum = landusef.sum(axis=0) - landusef[water_index]
     mask_out = mask.astype(np.uint8).copy()
-    flip_to_land = (mask_out == 1) & (land_sum > land_threshold)
+    flip_to_land = (mask_out == 1) & (land_sum >= land_threshold)
     mask_out[flip_to_land] = 0
     return mask_out
 
@@ -386,7 +386,7 @@ def ocean_mask_from_highres_nc(infil: Dataset,
                                lons: np.ndarray,
                                lats: np.ndarray,
                                land_sea_mask_nc: str,
-                               ocean_threshold: float = 0.5) -> np.ndarray:
+                               land_threshold: float = 0.5) -> np.ndarray:
     """
     使用高分辨率 `land_ocean_mask` 数据聚合生成 CWRF 海洋掩膜。
 
@@ -394,8 +394,8 @@ def ocean_mask_from_highres_nc(infil: Dataset,
     1. 计算 CWRF 网格角点；
     2. 从全球高分辨率海陆掩膜中裁剪出覆盖当前域的子区域；
     3. 将高分像元中心映射到 CWRF 四边形网格；
-    4. 统计每个 CWRF 格点内的海洋像元占比；
-    5. 按 `ocean_threshold` 阈值将粗网格判定为海洋或陆地。
+    4. 统计每个 CWRF 格点内的陆地像元占比；
+    5. 按 `land_threshold` 阈值将粗网格判定为海洋或陆地。
 
     高分辨率掩膜数据约定：
     - `0 = ocean`
@@ -409,9 +409,9 @@ def ocean_mask_from_highres_nc(infil: Dataset,
         二维 CWRF 中心点经纬度数组。
     land_sea_mask_nc : str
         高分辨率海陆掩膜文件路径。
-    ocean_threshold : float, default=0.5
-        海洋比例阈值。若某个 CWRF 格点内海洋像元比例大于等于该值，
-        则判定为海洋。
+    land_threshold : float, default=0.5
+        陆地比例阈值。若某个 CWRF 格点内陆地像元比例大于等于该值，
+        则判定为陆地；否则判定为海洋。
 
     返回
     ----------
@@ -471,22 +471,22 @@ def ocean_mask_from_highres_nc(infil: Dataset,
     ncell = ny * nx
     valid = elmindex >= 0
     flat_idx = elmindex[valid].ravel()
-    ocean_hits = (hr_mask[valid] == 0).astype(np.float64).ravel()
+    land_hits = (hr_mask[valid] == 1).astype(np.float64).ravel()
     total_counts = np.bincount(flat_idx, minlength=ncell).astype(np.float64)
-    ocean_counts = np.bincount(flat_idx, weights=ocean_hits, minlength=ncell).astype(np.float64)
+    land_counts = np.bincount(flat_idx, weights=land_hits, minlength=ncell).astype(np.float64)
 
-    ocean_fraction = np.full(ncell, np.nan, dtype=np.float64)
+    land_fraction = np.full(ncell, np.nan, dtype=np.float64)
     sampled = total_counts > 0
-    ocean_fraction[sampled] = ocean_counts[sampled] / total_counts[sampled]
+    land_fraction[sampled] = land_counts[sampled] / total_counts[sampled]
 
     if np.any(~sampled):
         print(f"警告：有 {np.sum(~sampled)} 个 CWRF 格点未命中高分像元，回退为中心点取样。")
         lat_idx = np.abs(hr_lats[:, None, None] - lats[None, :, :]).argmin(axis=0)
         lon_idx = np.abs(hr_lons[:, None, None] - lons[None, :, :]).argmin(axis=0)
         center_land = hr_mask[lat_idx, lon_idx]
-        ocean_fraction[~sampled] = (center_land.ravel()[~sampled] == 0).astype(np.float64)
+        land_fraction[~sampled] = (center_land.ravel()[~sampled] == 1).astype(np.float64)
 
-    return (ocean_fraction.reshape(ny, nx) >= ocean_threshold).astype(np.uint8)
+    return (land_fraction.reshape(ny, nx) < land_threshold).astype(np.uint8)
 
 
 
@@ -717,7 +717,7 @@ if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
     argparser.add_argument('-lk', '--lake_threshold', type=float, help='lake threshold', required=True)
     argparser.add_argument('-lsbdy', '--land_and_sea', type=str, help='land and sea boundary (vector file like .gpkg/.shp, or netcdf [0=sea,1=land])', default='land_ocean_mask_igbp_2020.nc')
-    argparser.add_argument('-thres', '--land_threshold', type=float, help='land threshold', default=0.5)
+    argparser.add_argument('-thres', '--land_threshold', type=float, help='land fraction threshold', default=0.5)
     args = argparser.parse_args()
     lake_threshold = args.lake_threshold
     land_and_sea = args.land_and_sea
@@ -801,11 +801,11 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"矢量边界文件判定失败（{e}），回退到高分辨率海陆掩膜 [Method-2].")
             print(f"           掩膜文件：{land_sea_mask_nc}")
-            mask = ocean_mask_from_highres_nc(infil, lons, lats, land_sea_mask_nc, ocean_threshold=land_threshold)
+            mask = ocean_mask_from_highres_nc(infil, lons, lats, land_sea_mask_nc, land_threshold=land_threshold)
     else:
-        print(f"[Method-2] 未提供矢量边界文件或文件不存在，使用高分辨率海陆掩膜（海洋比例 >= {land_threshold} 判海）")
+        print(f"[Method-2] 未提供矢量边界文件或文件不存在，使用高分辨率海陆掩膜（陆地比例 >= {land_threshold} 判陆）")
         print(f"           掩膜文件：{land_sea_mask_nc}")
-        mask = ocean_mask_from_highres_nc(infil, lons, lats, land_sea_mask_nc, ocean_threshold=land_threshold)
+        mask = ocean_mask_from_highres_nc(infil, lons, lats, land_sea_mask_nc, land_threshold=land_threshold)
     # 外部 shp/nc 先给出海陆主判定；这里再用 LANDUSEF 做一次保守回修。
     # 若某格点虽然已被外部边界判为海洋，但现有 LANDUSEF 的非水体比例仍显著偏高，
     # 则允许 LANDUSEF 否决该海洋判定，并把该格点翻回陆地。
