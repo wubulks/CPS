@@ -484,6 +484,7 @@ def Make_Dirs(casecfg, envcfg, gridname):
         f'{casepath}/PrepCWRF/Second_ICBC',
         f'{casepath}/PrepCWRF/Second_ICBC/Geog_Gather',
         f'{casepath}/PrepCWRF/{gridname}',
+        f'{casepath}/PrepCWRF/{gridname}/Geog_{gridname}',
         f'{casepath}/PrepCoLM',
         f'{casepath}/PrepCoLM/First_GenMesh',
         f'{casepath}/PrepCoLM/Second_MakeSrf',
@@ -495,6 +496,7 @@ def Make_Dirs(casecfg, envcfg, gridname):
         f'{casepath}/PrepCRESM/{gridname}/cpl7data',
         f'{casepath}/{gridname}',
         f'{casepath}/{gridname}/Grid_{gridname}',
+        f'{casepath}/{gridname}/Grid_{gridname}/Geog_{gridname}',
         f'{casepath}/{gridname}/ICBC_{gridname}',
     ]
     

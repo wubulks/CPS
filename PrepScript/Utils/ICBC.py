@@ -487,19 +487,19 @@ def Ungrib_MPI_ESM1_2_HR_hist(casecfg, envcfg, gridname, start_time, end_time):
         cmd = f"sed -i '/interval_seconds/c\\{str_use}' namelist.wps"
         Tools.Run_CMD(cmd, "Alternating Time in namelist.wps")
         
-        # ungrib 2D files
+        # ungrib files
         startdate = start_time.strftime('%Y-%m-%d')
         enddate = end_time.strftime('%Y-%m-%d')
         Tools.Link('./Variable_Tables/Vtable.ECMWF', 'Vtable')
         cmd = f'rm -rf GRIBFILE.*'
         Tools.Run_CMD(cmd, "Remove old GRIBFILE")
-        log_file = f'{CaseOutputPath}/{gridname}/Log/log.ungrib_2D.{time_str}'
+        log_file = f'{CaseOutputPath}/{gridname}/Log/log.ungrib.{time_str}'
         cmd  = f'conda run -n {cresmenv} --no-capture-output python -u ungrib_nc2im.py '
         cmd += f'--forcename MPI-ESM1-2-HR_hist --startdate {startdate} --enddate {enddate} '
         cmd += f'--inputdir ./DATA --outputdir ./ --nprocs {CWRFCoreNum} -env {ungribenv} '
         cmd += f'--forcinfopath {Forc_Info} > {log_file} 2>&1'
         Tools.Run_CMD(cmd, "Run ungrib_nc2im.py")
-        # os.system(f'mv ungrib.log ungrib_2D.log')
+        # os.system(f'mv ungrib.log ungrib.log')
         timeseries = Tools.Generate_Timeseries(start_time, end_time, DataCalender, freq='6H')
         Tools.Check_Ungrib_Finish(os.getcwd(), prefix[0], timeseries)
         logger.info(f'{Consts.S4}✓  {time_str}: Ungrib 2D')
@@ -679,19 +679,19 @@ def Ungrib_MPI_ESM1_2_HR_ssp245(casecfg, envcfg, gridname, start_time, end_time)
         cmd = f"sed -i '/interval_seconds/c\\{str_use}' namelist.wps"
         Tools.Run_CMD(cmd, "Alternating Time in namelist.wps")
         
-        # ungrib 2D files
+        # ungrib files
         startdate = start_time.strftime('%Y-%m-%d')
         enddate = end_time.strftime('%Y-%m-%d')
         Tools.Link('./Variable_Tables/Vtable.ECMWF', 'Vtable')
         cmd = f'rm -rf GRIBFILE.*'
         Tools.Run_CMD(cmd, "Remove old GRIBFILE")
-        log_file = f'{CaseOutputPath}/{gridname}/Log/log.ungrib_2D.{time_str}'
+        log_file = f'{CaseOutputPath}/{gridname}/Log/log.ungrib.{time_str}'
         cmd  = f'conda run -n {cresmenv} --no-capture-output python -u ungrib_nc2im.py '
         cmd += f'--forcename MPI-ESM1-2-HR_ssp245 --startdate {startdate} --enddate {enddate} '
         cmd += f'--inputdir ./DATA --outputdir ./ --nprocs {CWRFCoreNum} -env {ungribenv} '
         cmd += f'--forcinfopath {Forc_Info} > {log_file} 2>&1'
         Tools.Run_CMD(cmd, "Run ungrib_nc2im.py")
-        # os.system(f'mv ungrib.log ungrib_2D.log')
+        # os.system(f'mv ungrib.log ungrib.log')
         timeseries = Tools.Generate_Timeseries(start_time, end_time, DataCalender, freq='6H')
         Tools.Check_Ungrib_Finish(os.getcwd(), prefix[0], timeseries)
         logger.info(f'{Consts.S4}✓  {time_str}: Ungrib 2D')
@@ -872,19 +872,19 @@ def Ungrib_MPI_ESM1_2_HR_ssp585(casecfg, envcfg, gridname, start_time, end_time)
         cmd = f"sed -i '/interval_seconds/c\\{str_use}' namelist.wps"
         Tools.Run_CMD(cmd, "Alternating Time in namelist.wps")
         
-        # ungrib 2D files
+        # ungrib files
         startdate = start_time.strftime('%Y-%m-%d')
         enddate = end_time.strftime('%Y-%m-%d')
         Tools.Link('./Variable_Tables/Vtable.ECMWF', 'Vtable')
         cmd = f'rm -rf GRIBFILE.*'
         Tools.Run_CMD(cmd, "Remove old GRIBFILE")
-        log_file = f'{CaseOutputPath}/{gridname}/Log/log.ungrib_2D.{time_str}'
+        log_file = f'{CaseOutputPath}/{gridname}/Log/log.ungrib.{time_str}'
         cmd  = f'conda run -n {cresmenv} --no-capture-output python -u ungrib_nc2im.py '
         cmd += f'--forcename MPI-ESM1-2-HR_ssp585 --startdate {startdate} --enddate {enddate} '
         cmd += f'--inputdir ./DATA --outputdir ./ --nprocs {CWRFCoreNum} -env {ungribenv} '
         cmd += f'--forcinfopath {Forc_Info} > {log_file} 2>&1'
         Tools.Run_CMD(cmd, "Run ungrib_nc2im.py")
-        # os.system(f'mv ungrib.log ungrib_2D.log')
+        # os.system(f'mv ungrib.log ungrib.log')
         timeseries = Tools.Generate_Timeseries(start_time, end_time, DataCalender, freq='6H')
         Tools.Check_Ungrib_Finish(os.getcwd(), prefix[0], timeseries)
         logger.info(f'{Consts.S4}✓  {time_str}: Ungrib 2D')
@@ -1065,13 +1065,13 @@ def Ungrib_CESM2_hist(casecfg, envcfg, gridname, start_time, end_time):
         cmd = f"sed -i '/interval_seconds/c\\{str_use}' namelist.wps"
         Tools.Run_CMD(cmd, "Alternating Time in namelist.wps")
         
-        # ungrib 2D files
+        # ungrib files
         startdate = start_time.strftime('%Y-%m-%d')
         enddate = end_time.strftime('%Y-%m-%d')
         Tools.Link('./Variable_Tables/Vtable.ECMWF', 'Vtable')
         cmd = f'rm -rf GRIBFILE.*'
         Tools.Run_CMD(cmd, "Remove old GRIBFILE")
-        log_file = f'{CaseOutputPath}/{gridname}/Log/log.ungrib_2D.{time_str}'
+        log_file = f'{CaseOutputPath}/{gridname}/Log/log.ungrib.{time_str}'
         cmd  = f'conda run -n {cresmenv} --no-capture-output python -u ungrib_nc2im.py '
         cmd += f'--forcename {ForcingName} --startdate {startdate} --enddate {enddate} '
         cmd += f'--inputdir ./DATA --outputdir ./ --nprocs {CWRFCoreNum} -env {ungribenv} '
