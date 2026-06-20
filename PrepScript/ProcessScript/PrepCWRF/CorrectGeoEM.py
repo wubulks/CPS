@@ -717,9 +717,11 @@ if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
     argparser.add_argument('-lk', '--lake_threshold', type=float, help='lake threshold', required=True)
     argparser.add_argument('-lsbdy', '--land_and_sea', type=str, help='land and sea boundary (vector file like .gpkg/.shp, or netcdf [0=sea,1=land])', default='land_ocean_mask_igbp_2020.nc')
+    argparser.add_argument('-thres', '--land_threshold', type=float, help='land threshold', default=0.5)
     args = argparser.parse_args()
     lake_threshold = args.lake_threshold
     land_and_sea = args.land_and_sea
+    land_threshold = args.land_threshold
 
     land_and_sea_shp = None
     land_sea_mask_nc = None
@@ -799,15 +801,15 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"矢量边界文件判定失败（{e}），回退到高分辨率海陆掩膜 [Method-2].")
             print(f"           掩膜文件：{land_sea_mask_nc}")
-            mask = ocean_mask_from_highres_nc(infil, lons, lats, land_sea_mask_nc, ocean_threshold=0.5)
+            mask = ocean_mask_from_highres_nc(infil, lons, lats, land_sea_mask_nc, ocean_threshold=land_threshold)
     else:
-        print("[Method-2] 未提供矢量边界文件或文件不存在，使用高分辨率海陆掩膜（海洋比例 >= 0.5 判海）")
+        print(f"[Method-2] 未提供矢量边界文件或文件不存在，使用高分辨率海陆掩膜（海洋比例 >= {land_threshold} 判海）")
         print(f"           掩膜文件：{land_sea_mask_nc}")
-        mask = ocean_mask_from_highres_nc(infil, lons, lats, land_sea_mask_nc, ocean_threshold=0.5)
+        mask = ocean_mask_from_highres_nc(infil, lons, lats, land_sea_mask_nc, ocean_threshold=land_threshold)
     # 外部 shp/nc 先给出海陆主判定；这里再用 LANDUSEF 做一次保守回修。
     # 若某格点虽然已被外部边界判为海洋，但现有 LANDUSEF 的非水体比例仍显著偏高，
     # 则允许 LANDUSEF 否决该海洋判定，并把该格点翻回陆地。
-    newocemask = refine_ocean_with_landuse(mask, landusef, land_threshold=0.5, water_index=15)
+    newocemask = refine_ocean_with_landuse(mask, landusef, land_threshold=land_threshold, water_index=15)
     
     # 更新 SC_WATER
     newscw = scwcopy.copy()
