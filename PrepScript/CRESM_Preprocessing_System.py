@@ -236,7 +236,8 @@ def Check_AllConfig(case_cfg, env_cfg, gridname, level='INFO'):
         # 你的特殊逻辑：BdyWidth 必须是奇数且 >= 13
         (gridname, 'BdyWidth',   lambda x: x >= 13 and x % 2 != 0, "Must be ODD and >= 13"),
         (gridname, 'LakeThreshold', lambda x: 0.0 <= x <= 1.0, "Must be 0.0 to 1.0"),
-        (gridname, 'TimeChunkCount', lambda x: x > 0, "Must be > 0 (if used)"), 
+        ('BaseInfo', 'TimeChunkCount', lambda x: x > 0, "Must be > 0 (if used)"),
+        ('BaseInfo', 'GroupBy', lambda x: x > 0, "Must be > 0 (if used)"),
     ]
 
     # [D] 必须存在的 Env 路径 Key (Env Config [Paths])
@@ -276,6 +277,14 @@ def Check_AllConfig(case_cfg, env_cfg, gridname, level='INFO'):
             except ValueError:
                 _error(f"[{sec}] {key} must be boolean (True/False)")
 
+    # GroupBy is required when time-sliced ICBC processing is enabled.
+    try:
+        time_chunk_enabled = case_cfg.getboolean('BaseInfo', 'Enable_TimeChunk')
+    except (configparser.Error, ValueError):
+        time_chunk_enabled = False
+    if time_chunk_enabled and not case_cfg.has_option('BaseInfo', 'GroupBy'):
+        _error("[BaseInfo] GroupBy is required when Enable_TimeChunk=True")
+
     # --- 2.3 数值逻辑检查 ---
     for sec, key, validator, rule_desc in VALUE_CHECKS:
         if not case_cfg.has_option(sec, key):
@@ -299,6 +308,18 @@ def Check_AllConfig(case_cfg, env_cfg, gridname, level='INFO'):
                 _ok(f"{key.ljust(25)}: {val}", is_detail=False)
         except ValueError:
             _error(f"[{sec}] {key} is not a valid number")
+
+    if time_chunk_enabled and case_cfg.has_option('BaseInfo', 'GroupBy'):
+        try:
+            time_chunk_count = case_cfg.getint('BaseInfo', 'TimeChunkCount')
+            group_by = case_cfg.getint('BaseInfo', 'GroupBy')
+            if group_by > time_chunk_count:
+                _error(
+                    f"[BaseInfo] GroupBy={group_by} cannot exceed "
+                    f"TimeChunkCount={time_chunk_count}"
+                )
+        except (configparser.Error, ValueError):
+            pass
 
     # --- 2.4 Env 路径检查 ---
     for key in PATH_CHECKS:
