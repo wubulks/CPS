@@ -668,6 +668,11 @@ def Second_ICBC(casecfg, envcfg, gridname):
     ForcingDataName = casecfg.get(gridname, 'ForcingDataName')
     Enable_TimeChunk = casecfg.getboolean('BaseInfo', 'Enable_TimeChunk')
     TimeChunkCount = casecfg.getint('BaseInfo', 'TimeChunkCount')
+    if Enable_TimeChunk and not casecfg.has_option('BaseInfo', 'GroupBy'):
+        raise ValueError(
+            "[BaseInfo] GroupBy must be configured when Enable_TimeChunk=True."
+        )
+    GroupBy = casecfg.getint('BaseInfo', 'GroupBy', fallback=1)
     Go_Ungrib = casecfg.getboolean('PrepCWRF', 'Go_Ungrib')
     Go_Metgrid = casecfg.getboolean('PrepCWRF', 'Go_Metgrid')
     Go_Real = casecfg.getboolean('PrepCWRF', 'Go_Real')
@@ -699,22 +704,52 @@ def Second_ICBC(casecfg, envcfg, gridname):
             days = t.tm_yday - 1
             logger.info(f'{Consts.S4}!!! Processing the whole period with slicing and multiprocessing !!!')
             logger.info(f'{Consts.S8}--> It may take {days} days {t.tm_hour} hours {t.tm_min} minutes {t.tm_sec} seconds <--\n')
+            if TimeChunkCount < 1:
+                raise ValueError("TimeChunkCount must be greater than zero.")
+            if GroupBy < 1 or GroupBy > TimeChunkCount:
+                raise ValueError(
+                    "GroupBy must be between 1 and TimeChunkCount "
+                    f"(got GroupBy={GroupBy}, TimeChunkCount={TimeChunkCount})."
+                )
+
             timelist = Tools.Split_Days(StartTime, EndTime, TimeChunkCount)
-            args = []
-            for i in range(TimeChunkCount):
-                start_time, end_time = timelist[i]
-                args.append((casecfg, envcfg, gridname, start_time, end_time))
-                ICBC.Link_CWPS_Files(casecfg, envcfg, gridname, start_time, end_time)
+            chunk_group_size = (TimeChunkCount + GroupBy - 1) // GroupBy
 
-            Workers = TimeChunkCount
+            for group_index in range(GroupBy):
+                group_start = group_index * chunk_group_size
+                group_end = min(group_start + chunk_group_size, TimeChunkCount)
+                if group_start >= group_end:
+                    break
 
-            # --- Ungrib --- 
-            Tools.Run_Parallel(ICBC.Ungrib, args, Workers, "Ungrib")
-            logger.info(f"{Consts.S4}✦  Ungrib Step Complete!")
+                group_args = []
+                for start_time, end_time in timelist[group_start:group_end]:
+                    group_args.append((casecfg, envcfg, gridname, start_time, end_time))
+                    ICBC.Link_CWPS_Files(
+                        casecfg, envcfg, gridname, start_time, end_time
+                    )
 
-            # --- Metgrid --- 
-            Tools.Run_Parallel(ICBC.Metgrid, args, Workers, "Metgrid")
-            logger.info(f"{Consts.S4}✦  Metgrid Step Complete!")
+                workers = len(group_args)
+                logger.info(
+                    f"{Consts.S4}!!! Processing ICBC group "
+                    f"{group_index + 1}/{GroupBy}: chunks "
+                    f"{group_start + 1}-{group_end} !!!"
+                )
+
+                # --- Ungrib ---
+                Tools.Run_Parallel(ICBC.Ungrib, group_args, workers, "Ungrib")
+                logger.info(
+                    f"{Consts.S4}✦  Ungrib group "
+                    f"{group_index + 1}/{GroupBy} Complete!"
+                )
+
+                # --- Metgrid ---
+                Tools.Run_Parallel(ICBC.Metgrid, group_args, workers, "Metgrid")
+                logger.info(
+                    f"{Consts.S4}✦  Metgrid group "
+                    f"{group_index + 1}/{GroupBy} Complete!"
+                )
+
+            logger.info(f"{Consts.S4}✦  All Ungrib and Metgrid groups Complete!")
          
             # --- Real --- 
             ICBC.Real(casecfg, envcfg,  gridname, timelist)

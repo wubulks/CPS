@@ -414,6 +414,7 @@ Use_CoLMLAI = False
 Use_CoLMSeaMask = False
 Enable_TimeChunk = True
 TimeChunkCount = 6
+GroupBy = 2
 
 [NEWHK_1km]
 CaseOutputPath = /stu01/chenhj23/CRESMDataPrep/Cases

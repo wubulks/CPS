@@ -1000,6 +1000,8 @@ PART 1: case.ini (Experiment Configuration)
                              False means using shpfile lake/sea mask.
   Enable_TimeChunk         : Enable time-splitting for long simulations.
   TimeChunkCount           : Number of chunks to split the run into (suggest 4-10).
+  GroupBy                  : Number of sequential ICBC chunk groups. Each group
+                             completes Ungrib and Metgrid before the next starts.
 
 [PrepCWRF]  -- CWRF Preprocessing Switches
   CWRFCoreNum              : CPU cores for CWRF MPI tasks (suggest 4-24).
@@ -1276,6 +1278,7 @@ CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid
         ("Use_CoLMSeaMask", "switch", "Use CoLM's Sea Mask data to identify sea areas. False means using shpfile lake/sea mask."),
         ("Enable_TimeChunk", "switch", "Enable time-splitting for long simulations."),
         ("TimeChunkCount", "int", "Number of chunks (suggest 4-10)."),
+        ("GroupBy", "int", "Number of sequential ICBC chunk groups."),
     ]
     create_section_table("[BaseInfo]", data_base, color="blue", width=MAX_WIDTH, indent_left=4)
 
