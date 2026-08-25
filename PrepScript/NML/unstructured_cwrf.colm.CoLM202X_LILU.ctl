@@ -114,10 +114,24 @@
    DEF_USE_SnowInit = .false.
    ! -----------------------
 
-   ! ---- Forcing Downscalling ----
+   ! ---- Forcing Downscaling (CoLM202X_LILU) ----
+   DEF_Forcing_Interp_Method           = 'arealweight' ! arealweight or bilinear
+   ! Full topographic downscaling. Requires the high-resolution factor files
+   ! under DEF_DS_HiresTopographyDataDir.
    DEF_USE_Forcing_Downscaling        = .false.
-   DEF_DS_precipitation_adjust_scheme = 'II'
-   DEF_DS_longwave_adjust_scheme      = 'II'
+   ! Simple topographic downscaling using MERIT-Hydro factors.
+   DEF_USE_Forcing_Downscaling_Simple = .true.
+   ! Directory containing the high-resolution topographic factors. For the
+   ! full scheme, CoLM reads slope.nc, aspect.nc, sky_view_factor.nc,
+   ! curvature.nc, terrain_elev_angle_front.nc and
+   ! terrain_elev_angle_back.nc from this directory. The simple scheme
+   ! reads topography_MERITHydro.nc and curvature_MERITHydro.nc.
+   DEF_DS_HiresTopographyDataDir      = '/shr03/CoLMrawdata/'
+   ! Precipitation adjustment: I or II; III delegates to the Python path.
+   DEF_DS_precipitation_adjust_scheme = 'I'
+   ! Longwave adjustment: I uses the humidity/emissivity method; other
+   ! values use the elevation-based lapse-rate method in CoLM.
+   DEF_DS_longwave_adjust_scheme      = 'I'
    ! ------------------------------
 
    ! ---- Rain&Snow ----

@@ -78,6 +78,7 @@ def First_StaticData(casecfg, envcfg, gridname):
     SinGridList = Tools.Build_SinGridList_From_MaxMinWGS(maxmin_wgs, Expand_Deg = 20, Return_String = True)
     chaomodisenv = envcfg.get('Environment', 'CONDA_CHAO')
     SYS_CWRF = envcfg.get('Environment', 'SYS_CWRF')
+    SYS_NCL = envcfg.get('Environment', 'SYS_NCL')
 
 
     if (Go_Geogrid) or (Go_FVC) or (Go_LAI) or (Go_SAI) or (Go_IGBP) or (Collect_GeogData):
@@ -174,7 +175,7 @@ def First_StaticData(casecfg, envcfg, gridname):
             syears = 2000  # Hardcoded to cover all MODIS data
             eyears = 2023  # Hardcoded to cover all MODIS data
             cmd = f'conda run -n {chaomodisenv} --no-capture-output python -u MODIS2CWRF.py -hvs "{SinGridList}" -YS {syears} -YE {eyears} > {log_file} 2>&1'
-            print(cmd)
+            logger.debug(cmd)
             Tools.Run_CMD(cmd, "Run MODIS2CWRF.py")
 
             # Check FVC files
@@ -215,9 +216,9 @@ def First_StaticData(casecfg, envcfg, gridname):
             Tools.Run_CMD(f'rm -f {log_file}', "Remove old log file")
             cmd = f'conda run -n {cresmenv} --no-capture-output python -u generate_cwrf_flow.py > {log_file} 2>&1'
             Tools.Run_CMD(cmd, "Run generate_cwrf_flow.py")
-            cmd = f'conda run -n {xesmfenv} --no-capture-output python -u process_geo.py -res {dx_WE} -lk {LakeThreshold} -cpu {CWRFCoreNum} >> {log_file} 2>&1'
+            cmd = f'conda run -n {cresmenv} --no-capture-output python -u process_geo.py -res {dx_WE} -lk {LakeThreshold} -cpu {CWRFCoreNum} >> {log_file} 2>&1'
             Tools.Run_CMD(cmd, "Run process_geo.py")
-            cmd = f'conda run -n {xesmfenv} --no-capture-output python -u take_care_all.py >> {log_file} 2>&1'
+            cmd = f'conda run -n {cresmenv} --no-capture-output python -u take_care_all.py >> {log_file} 2>&1'
             Tools.Run_CMD(cmd, "Run take_care_all.py")
             logger.info(f"{Consts.S4}-> GeogPostProcess Path: {CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/GeogPostProcess/")
             geo_em_veg_path = f'{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/GeogPostProcess/geo_em.d01_veg.nc'
@@ -468,7 +469,7 @@ def First_StaticData(casecfg, envcfg, gridname):
             # Split SAI and LAI files
             log_file = f'{CaseOutputPath}/{gridname}/Log/log.split_sai_lai'
             cmd = f'{NCLPath} split_lat_sai.ncl > {log_file} 2>&1'
-            Tools.Run_CMD(cmd, "Split SAI and LAI files")
+            Tools.Run_CMD(cmd, "Split SAI and LAI files", env=SYS_NCL)
             logger.info(f'{Consts.S4}✓  Create SAI finished!')
         else:
             logger.info(f'{Consts.S4}==========> Skip SAI <==========')
@@ -761,6 +762,7 @@ def Gather_CWRF_Output(casecfg, envcfg, gridname):
     ScriptPath = envcfg.get('Paths', 'ScriptPath')
     NCOPath = envcfg.get('Paths', 'NCOPath')
     xesmfenv = envcfg.get('Environment', 'CONDA_XESMF')
+    cresmenv = envcfg.get('Environment', 'CONDA_CRESM')
     ProcessScriptPath = f"{ScriptPath}/ProcessScript"
     CWPSNMLPath = f'{CaseOutputPath}/{gridname}/NMLS/namelist.cwps.{gridname}'
     CWRFNMLPath = f'{CaseOutputPath}/{gridname}/NMLS/namelist.cwrf.{gridname}'
@@ -822,7 +824,7 @@ def Gather_CWRF_Output(casecfg, envcfg, gridname):
         log_file = f'{CaseOutputPath}/{gridname}/Log/log.SoilParams'
         cmd = f'rm -f {log_file}'
         Tools.Run_CMD(cmd, "remove old SoilParams log file")
-        cmd  = f'conda run -n {xesmfenv} --no-capture-output python -u CoLMSoilParams.py'
+        cmd  = f'conda run -n {cresmenv} --no-capture-output python -u CoLMSoilParams.py'
         cmd += f' -dx {dx_WE} -dy {dy_SN} -reflat {RefLat} -reflon {RefLon}'
         cmd += f' -truelat1 {True_Lat1} -truelat2 {True_Lat2} -geofile ./wrfinput_d01'
         cmd += f' -cpu {CWRFCoreNum} -nco {NCOPath} > {log_file} 2>&1'
@@ -836,4 +838,3 @@ def Gather_CWRF_Output(casecfg, envcfg, gridname):
         logger.info(f'{Consts.S4}==========> Skip Copy PrepCWRF Result <==========')
         logger.info(f'{Consts.S4}!!! Skip the whole process !!!\n\n')
     os.chdir(old_path)
-

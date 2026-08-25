@@ -1,0 +1,452 @@
+[PrepCWRF]
+CWRFCoreNum = 1
+Go_ShowDomain = False
+Go_Geogrid = True
+Go_FVC = True
+Go_LAI = True
+Go_IGBP = True
+Go_SAI = True
+Collect_GeogData = True
+Go_Ungrib = True
+Go_Metgrid = True
+Go_Real = True
+Go_VBS = True
+Copy_CWRF_Output = True
+
+[PrepCoLM]
+CoLMCoreNum = 100
+Go_MeshGrid = True
+Go_MakeSrf = True
+Go_MakeIni = True
+Go_CoLMTempRun = True
+Go_Remap = True
+Copy_CoLM_Output = True
+
+[PrepCRESM]
+Go_Coupler_Prep = True
+
+[GatherData]
+Collect_CWRF_Output = True
+Collect_CoLM_Output = True
+Collect_CRESM_Output = True
+
+[HB_15km]
+CaseOutputPath = /home/zhanghan/qTERA07/CPS/Case
+ForcingDataName = ERA5
+StartTime = 2000-01-01_00:00:00
+EndTime = 2000-01-05_00:00:00
+EdgeNum_WE = 110
+EdgeNum_SN = 108
+dx_WE = 15000
+dy_SN = 15000
+RefLat = 36.0
+RefLon = 117.0
+True_Lat1 = 31.0
+True_Lat2 = 42.0
+StandLon = 117.0
+BdyWidth = 15
+LakeThreshold = 0.5
+MeshSize = 1
+
+[Yangtze_C_6km_MPI]
+CaseOutputPath = /home/zhanghan/qTERA07/CPS/Case
+ForcingDataName = MPI-ESM1-2-HR_ssp245
+StartTime = 2015-01-01_06:00:00
+EndTime = 2015-12-31_00:00:00
+EdgeNum_WE = 316
+EdgeNum_SN = 217
+dx_WE = 6000
+dy_SN = 6000
+RefLat = 29.5
+RefLon = 114.3
+True_Lat1 = 27.0
+True_Lat2 = 33.0
+StandLon = 114.3
+BdyWidth = 15
+LakeThreshold = 0.30
+MeshSize = 1
+
+[Yangtze_C_6km_MPI_hist]
+CaseOutputPath = /home/zhanghan/qTERA07/CPS/Case
+ForcingDataName = MPI-ESM1-2-HR_hist
+StartTime = 2015-01-01_00:00:00
+EndTime = 2015-01-05_00:00:00
+EdgeNum_WE = 316
+EdgeNum_SN = 217
+dx_WE = 6000
+dy_SN = 6000
+RefLat = 29.5
+RefLon = 114.3
+True_Lat1 = 27.0
+True_Lat2 = 33.0
+StandLon = 114.3
+BdyWidth = 15
+LakeThreshold = 0.30
+MeshSize = 1
+
+[Yangtze_C_6km_MPI_ssp585]
+CaseOutputPath = /home/zhanghan/qTERA07/CPS/Case
+ForcingDataName = MPI-ESM1-2-HR_ssp585
+StartTime = 2015-01-01_00:00:00
+EndTime = 2015-01-05_00:00:00
+EdgeNum_WE = 316
+EdgeNum_SN = 217
+dx_WE = 6000
+dy_SN = 6000
+RefLat = 29.5
+RefLon = 114.3
+True_Lat1 = 27.0
+True_Lat2 = 33.0
+StandLon = 114.3
+BdyWidth = 15
+LakeThreshold = 0.30
+MeshSize = 1
+
+[Yangtze_C_6km_MPI_ssp245]
+CaseOutputPath = /home/zhanghan/qTERA07/CPS/Case
+ForcingDataName = MPI-ESM1-2-HR_ssp245
+StartTime = 2015-01-01_06:00:00
+EndTime = 2015-12-31_00:00:00
+EdgeNum_WE = 316
+EdgeNum_SN = 217
+dx_WE = 6000
+dy_SN = 6000
+RefLat = 29.5
+RefLon = 114.3
+True_Lat1 = 27.0
+True_Lat2 = 33.0
+StandLon = 114.3
+BdyWidth = 15
+LakeThreshold = 0.30
+MeshSize = 1
+
+[Yangtze_C_6km_CESM2_hist]
+CaseOutputPath = /home/zhanghan/qTERA07/CPS/Case
+ForcingDataName = CESM2_hist
+StartTime = 1985-01-01_00:00:00
+EndTime = 1986-01-03_00:00:00
+EdgeNum_WE = 316
+EdgeNum_SN = 217
+dx_WE = 6000
+dy_SN = 6000
+RefLat = 29.5
+RefLon = 114.3
+True_Lat1 = 27.0
+True_Lat2 = 33.0
+StandLon = 114.3
+BdyWidth = 15
+LakeThreshold = 0.30
+MeshSize = 1
+
+[CN_3km]
+CaseOutputPath = /home/zhanghan/qTERA07/CPS/Case
+ForcingDataName = ERA5
+StartTime = 2000-01-01_00:00:00
+EndTime = 2000-01-03_00:00:00
+EdgeNum_WE = 2311
+EdgeNum_SN = 1711
+dx_WE = 3000
+dy_SN = 3000
+RefLat = 35.1778
+RefLon = 110.0
+True_Lat1 = 30.0
+True_Lat2 = 60.0
+StandLon = 110.0
+BdyWidth = 15
+LakeThreshold = 0.50
+MeshSize = 2
+
+[CN_6km]
+CaseOutputPath = /home/zhanghan/qTERA07/CPS/Case
+ForcingDataName = ERA5
+StartTime = 2000-01-01_00:00:00
+EndTime = 2000-01-03_00:00:00
+EdgeNum_WE = 1156
+EdgeNum_SN = 856
+dx_WE = 6000
+dy_SN = 6000
+RefLat = 35.1778
+RefLon = 110.0
+True_Lat1 = 30.0
+True_Lat2 = 60.0
+StandLon = 110.0
+BdyWidth = 15
+LakeThreshold = 0.50
+MeshSize = 1
+
+[CN_10km]
+CaseOutputPath = /home/zhanghan/qTERA07/CPS/Case
+ForcingDataName = ERA5
+StartTime = 2000-01-01_00:00:00
+EndTime = 2000-01-03_00:00:00
+EdgeNum_WE = 694
+EdgeNum_SN = 514
+dx_WE = 10000
+dy_SN = 10000
+RefLat = 35.1778
+RefLon = 110.0
+True_Lat1 = 30.0
+True_Lat2 = 60.0
+StandLon = 110.0
+BdyWidth = 15
+LakeThreshold = 0.50
+MeshSize = 1
+
+[CN_15km]
+CaseOutputPath = /home/zhanghan/qTERA07/CPS/Case
+ForcingDataName = ERA5
+StartTime = 2000-01-01_00:00:00
+EndTime = 2000-01-03_00:00:00
+EdgeNum_WE = 463
+EdgeNum_SN = 343
+dx_WE = 15000
+dy_SN = 15000
+RefLat = 35.1778
+RefLon = 110.0
+True_Lat1 = 30.0
+True_Lat2 = 60.0
+StandLon = 110.0
+BdyWidth = 15
+LakeThreshold = 0.50
+MeshSize = 1
+
+[CN_30km]
+CaseOutputPath = /home/zhanghan/qTERA07/CPS/Case
+ForcingDataName = ERA5
+StartTime = 2000-01-01_00:00:00
+EndTime = 2000-01-03_00:00:00
+EdgeNum_WE = 232
+EdgeNum_SN = 172
+dx_WE = 30000
+dy_SN = 30000
+RefLat = 35.1778
+RefLon = 110.0
+True_Lat1 = 30.0
+True_Lat2 = 60.0
+StandLon = 110.0
+BdyWidth = 15
+LakeThreshold = 0.50
+MeshSize = 1
+
+[Alps_5km]
+CaseOutputPath = /home/zhanghan/qTERA07/CPS/Case
+ForcingDataName = ERA5
+StartTime = 2000-01-01_00:00:00
+EndTime = 2000-01-03_00:00:00
+EdgeNum_WE = 247
+EdgeNum_SN = 173
+dx_WE = 5000
+dy_SN = 5000
+RefLat = 45.7409
+RefLon = 10.9
+True_Lat1 = 43
+True_Lat2 = 47
+StandLon = 10.9
+BdyWidth = 15
+LakeThreshold = 0.50
+MeshSize = 1
+
+[Alps_5km_MPI]
+CaseOutputPath = /home/zhanghan/qTERA07/CPS/Case
+ForcingDataName = MPI-ESM1-2-HR_hist
+StartTime = 2000-01-01_00:00:00
+EndTime = 2000-01-03_00:00:00
+EdgeNum_WE = 247
+EdgeNum_SN = 173
+dx_WE = 5000
+dy_SN = 5000
+RefLat = 45.7409
+RefLon = 10.9
+True_Lat1 = 43
+True_Lat2 = 47
+StandLon = 10.9
+BdyWidth = 15
+LakeThreshold = 0.50
+MeshSize = 1
+
+[Plateau_5km_MPI245]
+CaseOutputPath = /home/zhanghan/qTERA07/CPS/Case
+ForcingDataName = MPI-ESM1-2-HR_ssp245
+StartTime = 2021-01-01_00:00:00
+EndTime = 2021-01-03_00:00:00
+EdgeNum_WE = 977
+EdgeNum_SN = 597
+dx_WE = 5000
+dy_SN = 5000
+RefLat = 35.5956
+RefLon = 83.3
+True_Lat1 = 25
+True_Lat2 = 45
+StandLon = 83.3
+BdyWidth = 15
+LakeThreshold = 0.50
+MeshSize = 1
+
+[Plateau_5km]
+CaseOutputPath = /home/zhanghan/qTERA07/CPS/Case
+ForcingDataName = ERA5
+StartTime = 2000-01-01_00:00:00
+EndTime = 2000-01-03_00:00:00
+EdgeNum_WE = 977
+EdgeNum_SN = 597
+dx_WE = 5000
+dy_SN = 5000
+RefLat = 35.5956
+RefLon = 83.3
+True_Lat1 = 25
+True_Lat2 = 45
+StandLon = 83.3
+BdyWidth = 15
+LakeThreshold = 0.50
+MeshSize = 1
+
+[Jiangsu_3km]
+CaseOutputPath = /home/zhanghan/qTERA07/CPS/Case
+ForcingDataName = ERA5
+StartTime = 2000-01-01_00:00:00
+EndTime = 2000-01-03_00:00:00
+EdgeNum_WE = 300
+EdgeNum_SN = 300
+dx_WE = 3000
+dy_SN = 3000
+RefLat = 32.5
+RefLon = 120
+True_Lat1 = 32.5
+True_Lat2 = 32.5
+StandLon = 120
+BdyWidth = 15
+LakeThreshold = 0.50
+MeshSize = 1
+
+[qTERA07_3km]
+CaseOutputPath = /stu01/chenhj23/CRESMDataPrep/Cases
+ForcingDataName = ERA5
+StartTime = 2017-09-01_00:00:00
+EndTime = 2019-01-02_00:00:00
+EdgeNum_WE = 485
+EdgeNum_SN = 365
+dx_WE = 3000
+dy_SN = 3000
+RefLat = 24.7
+RefLon = 112.0
+True_Lat1 = 24.7
+True_Lat2 = 24.7
+StandLon = 112.0
+BdyWidth = 15
+LakeThreshold = 0.50
+MeshSize = 1
+
+[SmallSC_30km]
+CaseOutputPath = /home/zhanghan/qTERA07/CPS/Case
+ForcingDataName = ERA5
+StartTime = 2001-07-01_00:00:00
+EndTime = 2001-07-31_00:00:00
+EdgeNum_WE = 80
+EdgeNum_SN = 80
+dx_WE = 30000
+dy_SN = 30000
+RefLat = 22.5
+RefLon = 114
+True_Lat1 = 22.5
+True_Lat2 = 22.5
+StandLon = 114
+BdyWidth = 15
+LakeThreshold = 0.50
+MeshSize = 1
+
+[SouthChina_300m]
+CaseOutputPath = /stu01/chenhj23/CRESMDataPrep/Cases
+ForcingDataName = ERA5
+StartTime = 2018-09-12_00:00:00
+EndTime = 2018-09-19_18:00:00
+EdgeNum_WE = 691
+EdgeNum_SN = 562
+dx_WE = 300
+dy_SN = 300
+RefLat = 22.256
+RefLon = 113.999
+True_Lat1 = 22.293
+True_Lat2 = 22.293
+StandLon = 114.084
+BdyWidth = 15
+LakeThreshold = 0.5
+MeshSize = 3
+
+[SouthChina_1km]
+CaseOutputPath = /stu01/chenhj23/CRESMDataPrep/Cases
+ForcingDataName = ERA5
+StartTime = 2018-09-12_00:00:00
+EndTime = 2018-09-19_18:00:00
+EdgeNum_WE = 208
+EdgeNum_SN = 169
+dx_WE = 1000
+dy_SN = 1000
+RefLat = 22.256
+RefLon = 113.999
+True_Lat1 = 22.293
+True_Lat2 = 22.293
+StandLon = 114.084
+BdyWidth = 15
+LakeThreshold = 0.5
+MeshSize = 2
+
+[HKtest_1km]
+CaseOutputPath = /stu01/chenhj23/CRESMDataPrep/Cases
+ForcingDataName = ERA5
+StartTime = 2018-09-14_00:00:00
+EndTime = 2018-09-18_00:00:00
+EdgeNum_WE = 500
+EdgeNum_SN = 300
+dx_WE = 1000
+dy_SN = 1000
+RefLat = 22.4
+RefLon = 114.1
+True_Lat1 = 22.4
+True_Lat2 = 22.4
+StandLon = 114.1
+BdyWidth = 15
+LakeThreshold = 0.5
+MeshSize = 2
+
+[BaseInfo]
+CleanTempFiles = False
+Use_CoLMLAI = False
+Use_CoLMSeaMask = False
+Enable_TimeChunk = True
+TimeChunkCount = 6
+
+[NEWHK_1km]
+CaseOutputPath = /stu01/chenhj23/CRESMDataPrep/Cases
+ForcingDataName = ERA5
+StartTime = 2018-09-14_00:00:00
+EndTime = 2018-09-19_18:00:00
+EdgeNum_WE = 255
+EdgeNum_SN = 223
+dx_WE = 1000
+dy_SN = 1000
+RefLat = 22.6
+RefLon = 113.7
+True_Lat1 = 22.6
+True_Lat2 = 22.6
+StandLon = 113.7
+BdyWidth = 15
+LakeThreshold = 0.5
+MeshSize = 2
+
+[NEWHK_250m]
+CaseOutputPath = /stu01/chenhj23/CRESMDataPrep/Cases
+ForcingDataName = ERA5
+StartTime = 2018-09-14_00:00:00
+EndTime = 2018-09-19_18:00:00
+EdgeNum_WE = 1017
+EdgeNum_SN = 889
+dx_WE = 250
+dy_SN = 250
+RefLat = 22.6
+RefLon = 113.7
+True_Lat1 = 22.6
+True_Lat2 = 22.6
+StandLon = 113.7
+BdyWidth = 15
+LakeThreshold = 0.5
+MeshSize = 3

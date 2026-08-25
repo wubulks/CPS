@@ -22,7 +22,7 @@ S28 = " "*28
 # xesmfenv = 'cresm_xesmf'
 # chaomodisenv = 'Chaomodis'
 # ungribenv = 'ungrid'
-UseExternalEnv = False
+UseExternalEnv = True
 # ==========> Global Variables <==========
 author = "Omarjan @ SYSU"
 version = "v1.2.4"

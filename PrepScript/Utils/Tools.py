@@ -42,7 +42,7 @@ logger = logging.getLogger("CRESMPrep." + __name__)
 def Run_CMD(cmd, description=None, env=None):
     """
     Execute shell command with optional environment source.
-    Uses interactive bash shell (-i) to ensure proper environment loading.
+    Uses a non-interactive bash shell to source the configured environment.
     """
     if description:
         logger.debug(description)
@@ -54,10 +54,10 @@ def Run_CMD(cmd, description=None, env=None):
             raise FileNotFoundError(f"Environment file not found: {env}")
         logger.debug(f"Sourcing environment: {env}")
     
-    # 构建最终命令 - 使用bash -i -c确保交互式shell模式
+    # 构建最终命令 - 使用bash -c加载环境并保留当前工作目录
     if Consts.UseExternalEnv and env:
-        # 使用交互式shell模式，这更接近您在终端中的操作
-        final_cmd = f"bash -i -c 'source {env} && {cmd}'"
+        # 使用非交互式 shell，保留当前工作目录
+        final_cmd = f"bash -c 'source {env} && {cmd}'"
     else:
         final_cmd = cmd
     
@@ -1059,7 +1059,9 @@ PART 2: env.ini (Environment Configuration)
 [Environment]
 SYS_CWRF                : Path to the environment setup script (to be sourced) for CWRF execution (e.g., /home/user/.cresm).
 SYS_CoLM                : Path to the environment setup script (to be sourced) for CoLM execution. (e.g., /home/user/.bashrc_CoLM202X_gnu).
+SYS_NCL                 : Path to the NCL/ESMF environment setup script for PrepCRESM step1.
 CONDA_XESMF             : Conda environment name for XESMF remapping (e.g., 'cresm_xesmf').
+CONDA_CRESM             : Conda environment name for CRESM preprocessing tools (e.g., 'cresm').
 CONDA_CHAO              : Conda environment name for Chaomodis tools (e.g., 'Chaomodis').
 CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid').
 
@@ -1068,6 +1070,8 @@ CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid
   
   ; CoLM Model & Data
   CoLMModelPath            : Path to CoLM source code/compiled model root.
+  CoLMNMLTemplate          : Optional CoLM namelist template. If omitted, use
+                              ${Paths:ScriptPath}/NML/unstructured_cwrf.colm.ctl.
   CoLMRawDataPath          : Path to CoLM raw geographical/soil datasets.
   CoLMRunDataPath          : Path to CoLM runtime data directory.
   CoLMForcingPath          : Path to CoLM forcing data (e.g., ERA5-Land).
@@ -1338,6 +1342,8 @@ CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid
     data_envs = [
         ("SYS_CWRF", "file", "Path to CWRF environment setup script (to be sourced)."),
         ("SYS_CoLM", "file", "Path to CoLM environment setup script (to be sourced)."),
+        ("SYS_NCL", "file", "Path to NCL/ESMF environment setup script for PrepCRESM step1."),
+        ("CONDA_CRESM", "str", "Conda environment name for CRESM preprocessing tools."),
         ("CONDA_XESMF", "str", "Conda environment name for XESMF remapping."),
         ("CONDA_CHAO", "str", "Conda environment name for Chaomodis tools."),
         ("CONDA_UNGRIB", "str", "Conda environment name for Ungrib tools."),
