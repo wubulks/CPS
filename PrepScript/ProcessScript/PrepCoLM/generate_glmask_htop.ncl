@@ -31,7 +31,7 @@ do ilon=0,lons-1
         rightlon=XLONG_U(ilat,ilon+1)
         toplat=XLAT_V(ilat+1,ilon)
         bottomlat=XLAT_V(ilat,ilon)
-        htoptemp:=htopinfil->htop({bottomlat:toplat},{leftlon:rightlon},:)
+        htoptemp:=htopinfil->htop(:,{bottomlat:toplat},{leftlon:rightlon})
         ; printVarSummary(htoptemp)
         htop_max(ilat,ilon)=tofloat(max(htoptemp))
     end do

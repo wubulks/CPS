@@ -67,6 +67,19 @@ def Read_Config(filepath):
     return config
 
 
+def Get_CoLM_NML_Template(envcfg):
+    """Return the configured CoLM namelist template."""
+    script_path = envcfg.get('Paths', 'ScriptPath')
+    template = envcfg.get(
+        'Paths',
+        'CoLMNMLTemplate',
+        fallback=f'{script_path}/NML/unstructured_cwrf.colm.ctl',
+    ).strip()
+    if not template:
+        template = f'{script_path}/NML/unstructured_cwrf.colm.ctl'
+    return os.path.expanduser(os.path.expandvars(template))
+
+
 
 def Get_Useful_Cases(casecfg):
     """ 
@@ -233,7 +246,7 @@ def Check_AllConfig(case_cfg, env_cfg, gridname, level='INFO'):
          'CWPSStaticPath', 'GlobalLakeDepth', 'GlobalLakeStatus',
         'NCOPath', 'CDOPath', 'NCLPath'
     ]
-    ENV_CHECKS = ['SYS_CWRF', 'SYS_CoLM', 
+    ENV_CHECKS = ['SYS_CWRF', 'SYS_CoLM', 'SYS_NCL',
         'CONDA_CRESM', 'CONDA_XESMF', 'CONDA_CHAO', 'CONDA_UNGRIB']
 
     # =========================================================
@@ -715,9 +728,8 @@ def Modify_CFNML(casecfg, envcfg, gridname):
 
 
 def Modify_CoLMNML(casecfg, envcfg, gridname, run_type):
-    ScriptPath = envcfg.get('Paths', 'ScriptPath')
     CaseOutputPath = casecfg.get(gridname, 'CaseOutputPath')
-    CtlCoLMNML = f"{ScriptPath}/NML/unstructured_cwrf.colm.ctl"
+    CtlCoLMNML = Get_CoLM_NML_Template(envcfg)
     CoLMRawDataPath = envcfg.get('Paths', 'CoLMRawDataPath')
     CoLMRunDataPath = envcfg.get('Paths', 'CoLMRunDataPath')
     StartTime = casecfg.get(gridname, 'StartTime')
@@ -732,6 +744,7 @@ def Modify_CoLMNML(casecfg, envcfg, gridname, run_type):
 
     # Check if the CoLM namelist file exists
     Tools.File_Exist(CtlCoLMNML, level='error')
+    logger.info(f"{Consts.S4}-> CoLM namelist template: {CtlCoLMNML}")
     
     with open(CtlCoLMNML, 'r') as file:
         lines = file.readlines()
