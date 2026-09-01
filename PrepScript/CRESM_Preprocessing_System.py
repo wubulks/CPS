@@ -106,43 +106,118 @@ def Modify_Config(casecfg, gridname, year=None):
         if year < 1900 or year > 2200:
             print("Please provide a valid year between 1900 and 2200")
             raise ValueError("year must be between 1900 and 2200")
+
         old_section = gridname
         new_section = f"{gridname}.{year}"
+
         print(f"")
         print(f"{Consts.S4}Modifying case section: {old_section} to {new_section}")
+
         casecfg.add_section(new_section)
+
         for key, val in casecfg.items(old_section):
             casecfg.set(new_section, key, val)
+
     # Check Time
     start_time_str = casecfg.get(gridname, 'StartTime')
     end_time_str = casecfg.get(gridname, 'EndTime')
+
     try:
-        start_time = datetime.strptime(start_time_str, '%Y-%m-%d_%H:%M:%S')
-        end_time = datetime.strptime(end_time_str, '%Y-%m-%d_%H:%M:%S')
+        start_time = datetime.strptime(
+            start_time_str,
+            '%Y-%m-%d_%H:%M:%S'
+        )
+        end_time = datetime.strptime(
+            end_time_str,
+            '%Y-%m-%d_%H:%M:%S'
+        )
     except ValueError:
         print(f"{Consts.S4}Time format error: {start_time_str}, {end_time_str}")
         print(f"{Consts.S4}Time format must be like: 2021-01-01_00:00:00")
         raise ValueError("Time format error")
+
     if start_time >= end_time:
         print(f"{Consts.S4}StartTime must be less than EndTime.")
-        raise ValueError(f"StartTime must be earlier than EndTime: {start_time_str} >= {end_time_str}")
+        raise ValueError(
+            f"StartTime must be earlier than EndTime: "
+            f"{start_time_str} >= {end_time_str}"
+        )
 
+    # Determine the target year position
     year_diff = end_time.year - start_time.year
-    
+
+    if year_diff == 0:
+        # Example:
+        #   2015-01-01 -> 2015-12-31
+        # Target year is the start year
+        reference_year = start_time.year
+
+    elif year_diff == 1:
+        # Example:
+        #   2015-01-01 -> 2016-01-01
+        # Target year is the first year
+        reference_year = start_time.year
+
+    elif year_diff == 2:
+        # Example:
+        #   2014-12-30 -> 2016-01-03
+        # Target year is the middle year: 2015
+        reference_year = start_time.year + 1
+
+    else:
+        print(
+            f"{Consts.S4}Unsupported time range: "
+            f"{start_time_str} - {end_time_str}"
+        )
+        print(
+            f"{Consts.S4}The year difference between StartTime and EndTime "
+            f"must be 0, 1, or 2."
+        )
+        raise ValueError(
+            f"Unsupported year difference: {year_diff}"
+        )
+
     key = 'Time'
     formatted_key = key.ljust(17)
+
     print(f"{Consts.S6}{formatted_key}: {start_time_str} - {end_time_str}\n")
-    new_start_time = start_time.replace(year=year, month=start_time.month, day=start_time.day, hour=start_time.hour, minute=start_time.minute, second=start_time.second)
-    new_end_time = end_time.replace(year=year+year_diff, month=end_time.month, day=end_time.day, hour=end_time.hour, minute=end_time.minute, second=end_time.second)
+
+    # Shift the complete time range according to the target year
+    year_offset = year - reference_year
+
+    new_start_time = start_time.replace(
+        year=start_time.year + year_offset,
+        month=start_time.month,
+        day=start_time.day,
+        hour=start_time.hour,
+        minute=start_time.minute,
+        second=start_time.second
+    )
+
+    new_end_time = end_time.replace(
+        year=end_time.year + year_offset,
+        month=end_time.month,
+        day=end_time.day,
+        hour=end_time.hour,
+        minute=end_time.minute,
+        second=end_time.second
+    )
+
     new_start_time_str = new_start_time.strftime('%Y-%m-%d_%H:%M:%S')
     new_end_time_str = new_end_time.strftime('%Y-%m-%d_%H:%M:%S')
     
     if new_start_time >= new_end_time:
         print(f"{Consts.S4}StartTime must be less than EndTime.")
-        raise ValueError(f"StartTime must be earlier than EndTime: {new_start_time_str} >= {new_end_time_str}")
-    casecfg.set(new_section, 'StartTime', new_start_time.strftime('%Y-%m-%d_%H:%M:%S'))
-    casecfg.set(new_section, 'EndTime', new_end_time.strftime('%Y-%m-%d_%H:%M:%S'))
+        raise ValueError(
+            f"StartTime must be earlier than EndTime: "
+            f"{new_start_time_str} >= {new_end_time_str}"
+        )
+
+    casecfg.set(new_section, 'StartTime', new_start_time_str)
+    casecfg.set(new_section, 'EndTime',new_end_time_str)
+
     gridname = new_section
+
     return casecfg, gridname
 
 
@@ -380,9 +455,6 @@ def Check_AllConfig(case_cfg, env_cfg, gridname, level='INFO'):
 
         else:
             _error(f"Env [Environment] missing key: {key}")
-
-
-
 
     # --- 2.5 时间逻辑检查 ---
     st_str = case_cfg.get(gridname, 'StartTime')

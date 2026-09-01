@@ -110,8 +110,6 @@ cwrf_lon_scalar=cwrf_lon
 
 curvilinear_to_SCRIP(cwrf_s_des, cwrf_lat_scalar, cwrf_lon_scalar, opt1)
 
-
-
 ; cwrf=>colm
 opt3=True
 opt3@ForceOverwrite = True
