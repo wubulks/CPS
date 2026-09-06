@@ -42,7 +42,7 @@ logger = logging.getLogger("CRESMPrep." + __name__)
 def Run_CMD(cmd, description=None, env=None):
     """
     Execute shell command with optional environment source.
-    Uses interactive bash shell (-i) to ensure proper environment loading.
+    Uses a non-interactive bash shell to source the configured environment.
     """
     if description:
         logger.debug(description)
@@ -54,10 +54,10 @@ def Run_CMD(cmd, description=None, env=None):
             raise FileNotFoundError(f"Environment file not found: {env}")
         logger.debug(f"Sourcing environment: {env}")
     
-    # 构建最终命令 - 使用bash -i -c确保交互式shell模式
+    # 构建最终命令 - 使用bash -c加载环境并保留当前工作目录
     if Consts.UseExternalEnv and env:
-        # 使用交互式shell模式，这更接近您在终端中的操作
-        final_cmd = f"bash -i -c 'source {env} && {cmd}'"
+        # 使用非交互式 shell，保留当前工作目录
+        final_cmd = f"bash -c 'source {env} && {cmd}'"
     else:
         final_cmd = cmd
     
@@ -617,13 +617,18 @@ def Check_Ungrib_Finish(path, prefix, timeseries):
         File_Exist(file_path, level="error")
 
 
-def Check_Metgrid_Finish(path, prefix, timeseries):
+def Check_Metgrid_Finish(path, prefix, timeseries, level="error"):
     """
-    Check metgrid output completeness.
+    Check metgrid output completeness and return whether every file exists.
+
+    The default error level preserves the strict post-run validation behavior.
+    Use a non-error level when probing whether an existing batch can be reused.
     """
     for itime in timeseries:
         file_path = f"{path}/{prefix}.{itime.strftime('%Y-%m-%d_%H:%M:%S')}.nc"
-        File_Exist(file_path, level="error")
+        if not File_Exist(file_path, level=level):
+            return False
+    return True
 
 
 def Extract_Dates_From_String(raw):
@@ -1000,6 +1005,8 @@ PART 1: case.ini (Experiment Configuration)
                              False means using shpfile lake/sea mask.
   Enable_TimeChunk         : Enable time-splitting for long simulations.
   TimeChunkCount           : Number of chunks to split the run into (suggest 4-10).
+  GroupBy                  : Number of sequential ICBC chunk groups. Each group
+                             completes Ungrib and Metgrid before the next starts.
 
 [PrepCWRF]  -- CWRF Preprocessing Switches
   CWRFCoreNum              : CPU cores for CWRF MPI tasks (suggest 4-24).
@@ -1009,6 +1016,9 @@ PART 1: case.ini (Experiment Configuration)
   Collect_GeogData         : Collect required geog data files.
   Go_Ungrib                : Run Ungrib (Decode GRIB forcing data, e.g., ERA5).
   Go_Metgrid               : Run Metgrid (Interpolate met data to model grid).
+  Skip_Completed_Metgrid   : Reuse a batch when all expected met_em files exist.
+                             Defaults to True for active multi-group processing;
+                             otherwise False. An explicit value takes precedence.
   Go_Real                  : Run Real (Generate wrfinput/wrfbdy).
   Go_VBS                   : Run VBS (Vegetation/Albedo processing).
   Copy_CWRF_Output         : Copy final CWRF inputs to case dir.
@@ -1059,7 +1069,9 @@ PART 2: env.ini (Environment Configuration)
 [Environment]
 SYS_CWRF                : Path to the environment setup script (to be sourced) for CWRF execution (e.g., /home/user/.cresm).
 SYS_CoLM                : Path to the environment setup script (to be sourced) for CoLM execution. (e.g., /home/user/.bashrc_CoLM202X_gnu).
+SYS_NCL                 : Path to the NCL/ESMF environment setup script for PrepCRESM step1.
 CONDA_XESMF             : Conda environment name for XESMF remapping (e.g., 'cresm_xesmf').
+CONDA_CRESM             : Conda environment name for CRESM preprocessing tools (e.g., 'cresm').
 CONDA_CHAO              : Conda environment name for Chaomodis tools (e.g., 'Chaomodis').
 CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid').
 
@@ -1068,6 +1080,8 @@ CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid
   
   ; CoLM Model & Data
   CoLMModelPath            : Path to CoLM source code/compiled model root.
+  CoLMNMLTemplate          : Optional CoLM namelist template. If omitted, use
+                              ${Paths:ScriptPath}/NML/unstructured_cwrf.colm.ctl.
   CoLMRawDataPath          : Path to CoLM raw geographical/soil datasets.
   CoLMRunDataPath          : Path to CoLM runtime data directory.
   CoLMForcingPath          : Path to CoLM forcing data (e.g., ERA5-Land).
@@ -1272,6 +1286,7 @@ CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid
         ("Use_CoLMSeaMask", "switch", "Use CoLM's Sea Mask data to identify sea areas. False means using shpfile lake/sea mask."),
         ("Enable_TimeChunk", "switch", "Enable time-splitting for long simulations."),
         ("TimeChunkCount", "int", "Number of chunks (suggest 4-10)."),
+        ("GroupBy", "int", "Number of sequential ICBC chunk groups."),
     ]
     create_section_table("[BaseInfo]", data_base, color="blue", width=MAX_WIDTH, indent_left=4)
 
@@ -1283,6 +1298,7 @@ CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid
         ("Collect_GeogData", "switch", "Collect required geog data files."),
         ("Go_Ungrib", "switch", "Run Ungrib (Decode GRIB/NC forcing)."),
         ("Go_Metgrid", "switch", "Run Metgrid (Interpolate met data)."),
+        ("Skip_Completed_Metgrid", "switch", "Reuse complete met_em batches; defaults on for active multi-group processing."),
         ("Go_Real", "switch", "Run Real (Generate wrfinput/wrfbdy)."),
         ("Go_VBS", "switch", "Run VBS (Vegetation/Albedo processing)."),
         ("Copy_CWRF_Output", "switch", "Copy final CWRF inputs to case dir."),
@@ -1338,6 +1354,8 @@ CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid
     data_envs = [
         ("SYS_CWRF", "file", "Path to CWRF environment setup script (to be sourced)."),
         ("SYS_CoLM", "file", "Path to CoLM environment setup script (to be sourced)."),
+        ("SYS_NCL", "file", "Path to NCL/ESMF environment setup script for PrepCRESM step1."),
+        ("CONDA_CRESM", "str", "Conda environment name for CRESM preprocessing tools."),
         ("CONDA_XESMF", "str", "Conda environment name for XESMF remapping."),
         ("CONDA_CHAO", "str", "Conda environment name for Chaomodis tools."),
         ("CONDA_UNGRIB", "str", "Conda environment name for Ungrib tools."),

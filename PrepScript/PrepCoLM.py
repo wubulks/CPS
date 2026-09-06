@@ -378,6 +378,7 @@ def Third_Remap(casecfg, envcfg, gridname):
     ProcessScriptPath = f"{ScriptPath}/ProcessScript"
     StartTime = datetime.strptime(StartTime, '%Y-%m-%d_%H:%M:%S')
     cresmenv = envcfg.get('Environment', 'CONDA_CRESM')
+    SYS_NCL = envcfg.get('Environment', 'SYS_NCL')
 
     
     if Go_Remap:
@@ -434,7 +435,7 @@ def Third_Remap(casecfg, envcfg, gridname):
         log_file = f'{CaseOutputPath}/{gridname}/Log/log.remap'
         os.system(f'rm -f {log_file}')
         cmd = rf'{NCLPath} generate_glmask_htop.ncl geogName=\"{gridname}\" > {log_file} 2>&1'
-        Tools.Run_CMD(cmd, "Run generate_glmask_htop.ncl")
+        Tools.Run_CMD(cmd, "Run generate_glmask_htop.ncl", env=SYS_NCL)
         Tools.File_Exist(f'./GLMASK.nc', level='error')
         
         logger.info(f'{Consts.S4}✓  Remap CoLM History File Finished!')
@@ -459,7 +460,7 @@ def CopyPrepCoLMResult(casecfg, envcfg, gridname):
         # move ColM result files to Result
         CoLMref = glob.glob(f'{CaseOutputPath}/{gridname}/PrepCoLM/Third_Remap/CoLM_ref_{gridname}.nc')
         glmask = glob.glob(f'{CaseOutputPath}/{gridname}/PrepCoLM/Third_Remap/GLMASK.nc')
-        # htop_patch = glob.glob(f'{CaseOutputPath}/{gridname}/PrepCoLM/Third_Remap/htop_patch_2020_{gridname}.nc')
+        htop_patch = glob.glob(f'{CaseOutputPath}/{gridname}/PrepCoLM/Third_Remap/htop_patch_2020_{gridname}.nc')
         htop_rcm = glob.glob(f'{CaseOutputPath}/{gridname}/PrepCoLM/Third_Remap/htop_rcm.nc')
         runcase = glob.glob(f'{CaseOutputPath}/{gridname}/PrepCoLM/Third_Remap/unstructured_cwrf_{gridname}')
         meshfile = glob.glob(f'{CaseOutputPath}/{gridname}/PrepCoLM/First_GenMesh/mesh_cwrf_{gridname}.nc')
@@ -467,7 +468,7 @@ def CopyPrepCoLMResult(casecfg, envcfg, gridname):
         # check if files exist
         Tools.File_Exist(CoLMref, level='error')
         Tools.File_Exist(glmask, level='error')
-        # Tools.File_Exist(htop_patch, level='error')
+        Tools.File_Exist(htop_patch, level='error')
         Tools.File_Exist(htop_rcm, level='error')
         Tools.File_Exist(runcase, level='error')
         Tools.File_Exist(meshfile, level='error')
@@ -475,7 +476,7 @@ def CopyPrepCoLMResult(casecfg, envcfg, gridname):
         # copy all files to Result
         Tools.Copy(f'{CoLMref[0]}', f'{CaseOutputPath}/{gridname}/PrepCoLM/{gridname}/')
         Tools.Copy(f'{glmask[0]}', f'{CaseOutputPath}/{gridname}/PrepCoLM/{gridname}/')
-        # Tools.Copy(f'{htop_patch[0]}', f'{CaseOutputPath}/{gridname}/PrepCoLM/{gridname}/')
+        Tools.Copy(f'{htop_patch[0]}', f'{CaseOutputPath}/{gridname}/PrepCoLM/{gridname}/')
         Tools.Copy(f'{htop_rcm[0]}', f'{CaseOutputPath}/{gridname}/PrepCoLM/{gridname}/')
         Tools.Copy(f'{runcase[0]}', f'{CaseOutputPath}/{gridname}/PrepCoLM/{gridname}/')
         Tools.Copy(f'{meshfile[0]}', f'{CaseOutputPath}/{gridname}/PrepCoLM/{gridname}/')
@@ -488,4 +489,3 @@ def CopyPrepCoLMResult(casecfg, envcfg, gridname):
     
     logger.info(f'{Consts.S4}◉  Copy PrepCoLM Result Complete!\n\n')
     os.chdir(old_path)
-

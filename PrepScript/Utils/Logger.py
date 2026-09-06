@@ -116,19 +116,24 @@ def Setup_Logger(
     )
     logger.addHandler(fh)
 
-    # Console handler
-    use_color = bool(enable_color and sys.stdout.isatty())
-    sh = logging.StreamHandler()
-    sh.setLevel(loglevel)
-    sh.setFormatter(
-        Adaptive_Level_Formatter(
-            fmt_normal=fmt_normal,
-            fmt_debug=fmt_debug,
-            datefmt=datefmt,
-            enable_color=use_color,
+    # Long remote runs are often launched from non-interactive SSH channels.
+    # Writing thousands of progress lines to such pipes can block the process
+    # if the client disconnects or stops draining stdout/stderr. Keep full logs
+    # in the file handler by default; allow explicit console logging when needed.
+    console_enabled = sys.stderr.isatty() or os.environ.get("CRESM_LOG_TO_CONSOLE") == "1"
+    if console_enabled:
+        use_color = bool(enable_color and sys.stderr.isatty())
+        sh = logging.StreamHandler()
+        sh.setLevel(loglevel)
+        sh.setFormatter(
+            Adaptive_Level_Formatter(
+                fmt_normal=fmt_normal,
+                fmt_debug=fmt_debug,
+                datefmt=datefmt,
+                enable_color=use_color,
+            )
         )
-    )
-    logger.addHandler(sh)
+        logger.addHandler(sh)
 
     return logger
 

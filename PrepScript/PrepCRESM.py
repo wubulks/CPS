@@ -35,6 +35,7 @@ def Coupler_Prep(casecfg, envcfg, gridname):
     old_path = os.getcwd()
     ScriptPath = envcfg.get('Paths', 'ScriptPath')
     NCLPath = envcfg.get('Paths', 'NCLPath')
+    SYS_NCL = envcfg.get('Environment', 'SYS_NCL')
     xesmfenv = envcfg.get('Environment', 'CONDA_XESMF')
     CaseOutputPath = casecfg.get(gridname, 'CaseOutputPath')
     Go_Coupler_Prep = casecfg.getboolean('PrepCRESM', 'Go_Coupler_Prep')
@@ -87,7 +88,7 @@ def Coupler_Prep(casecfg, envcfg, gridname):
         log_file = f'{CaseOutputPath}/{gridname}/Log/log.cpldata_step1'
         os.system(f'rm -f {log_file}')
         cmd = rf'{NCLPath} generate_cpl7_wgt_ALO_step1.ncl geogName=\"{gridname}\" > {log_file} 2>&1'
-        Tools.Run_CMD(cmd, "Run generate_cpl7_wgt_ALO_step1.ncl")
+        Tools.Run_CMD(cmd, "Run generate_cpl7_wgt_ALO_step1.ncl", env=SYS_NCL)
         
         logger.info(f'{Consts.S4}==========> Prep CRESM Step2 <==========')
         log_file = f'{CaseOutputPath}/{gridname}/Log/log.cpldata_step2'
