@@ -38,6 +38,23 @@ from . import Consts as Consts
 
 logger = logging.getLogger("CRESMPrep." + __name__)
 
+def Remove_Ungrib_Files(batch_path):
+    """Remove only the Ungrib products in one completed time-batch directory."""
+    removed_counts = {}
+    for prefix in ("2D", "3D", "SST"):
+        removed = 0
+        for file_path in glob.glob(os.path.join(batch_path, f"{prefix}:*")):
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.remove(file_path)
+                removed += 1
+        removed_counts[prefix] = removed
+
+    logger.info(
+        f"Removed Ungrib files for {os.path.basename(batch_path)}: "
+        f"2D={removed_counts['2D']}, 3D={removed_counts['3D']}, "
+        f"SST={removed_counts['SST']}"
+    )
+
 def Ungrib_CFSV2(casecfg, envcfg, gridname, start_time, end_time):
     old_path = os.getcwd()
     CaseOutputPath = casecfg.get(gridname, 'CaseOutputPath')
@@ -1134,7 +1151,30 @@ def Ungrib(casecfg, envcfg, gridname, start_time, end_time):
         raise ValueError(f"Unsupported ForcingDataName: {ForcingDataName}. ")
 
 
-def Metgrid(casecfg, envcfg, gridname, start_time, end_time):
+def Check_Metgrid_Batch_Finish(
+    casecfg, envcfg, gridname, start_time, end_time, level="error"
+):
+    """Check one batch with the same met_em completeness rule used by Metgrid."""
+    CaseOutputPath = casecfg.get(gridname, 'CaseOutputPath')
+    ForcingDataName = casecfg.get(gridname, 'ForcingDataName').strip().lower()
+    DataCalender = envcfg.get(ForcingDataName, 'DataCalender')
+    time_str = (
+        f'{start_time.year}-{start_time.month:02d}-{start_time.day:02d}_'
+        f'{end_time.year}-{end_time.month:02d}-{end_time.day:02d}'
+    )
+    batch_path = (
+        f'{CaseOutputPath}/{gridname}/PrepCWRF/Second_ICBC/'
+        f'UngribMetgrid_{time_str}'
+    )
+    timeseries = Tools.Generate_Timeseries(
+        start_time, end_time, DataCalender, freq='6H'
+    )
+    return Tools.Check_Metgrid_Finish(
+        batch_path, 'met_em.d01', timeseries, level=level
+    )
+
+
+def Metgrid(casecfg, envcfg, gridname, start_time, end_time, cleanup_ungrib=False):
     old_path = os.getcwd()
     CaseOutputPath = casecfg.get(gridname, 'CaseOutputPath')
     Go_Metgrid = casecfg.getboolean('PrepCWRF', 'Go_Metgrid')
@@ -1180,8 +1220,11 @@ def Metgrid(casecfg, envcfg, gridname, start_time, end_time):
         elif CWRFCoreNum > 1:
             cmd = f"mpirun -n {CWRFCoreNum} ./metgrid.exe > {log_file} 2>&1"
         Tools.Run_CMD(cmd, "Run metgrid.exe", env=SYS_CWRF)                
-        timeseries = Tools.Generate_Timeseries(start_time, end_time, DataCalender, freq='6H')
-        Tools.Check_Metgrid_Finish(os.getcwd(), 'met_em.d01', timeseries)
+        Check_Metgrid_Batch_Finish(
+            casecfg, envcfg, gridname, start_time, end_time
+        )
+        if cleanup_ungrib:
+            Remove_Ungrib_Files(os.getcwd())
         logger.info(f'{Consts.S4}✓  {time_str}: Metgrid ')
 
         # SST Processing

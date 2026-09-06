@@ -617,13 +617,18 @@ def Check_Ungrib_Finish(path, prefix, timeseries):
         File_Exist(file_path, level="error")
 
 
-def Check_Metgrid_Finish(path, prefix, timeseries):
+def Check_Metgrid_Finish(path, prefix, timeseries, level="error"):
     """
-    Check metgrid output completeness.
+    Check metgrid output completeness and return whether every file exists.
+
+    The default error level preserves the strict post-run validation behavior.
+    Use a non-error level when probing whether an existing batch can be reused.
     """
     for itime in timeseries:
         file_path = f"{path}/{prefix}.{itime.strftime('%Y-%m-%d_%H:%M:%S')}.nc"
-        File_Exist(file_path, level="error")
+        if not File_Exist(file_path, level=level):
+            return False
+    return True
 
 
 def Extract_Dates_From_String(raw):
@@ -1011,6 +1016,9 @@ PART 1: case.ini (Experiment Configuration)
   Collect_GeogData         : Collect required geog data files.
   Go_Ungrib                : Run Ungrib (Decode GRIB forcing data, e.g., ERA5).
   Go_Metgrid               : Run Metgrid (Interpolate met data to model grid).
+  Skip_Completed_Metgrid   : Reuse a batch when all expected met_em files exist.
+                             Defaults to True for active multi-group processing;
+                             otherwise False. An explicit value takes precedence.
   Go_Real                  : Run Real (Generate wrfinput/wrfbdy).
   Go_VBS                   : Run VBS (Vegetation/Albedo processing).
   Copy_CWRF_Output         : Copy final CWRF inputs to case dir.
@@ -1290,6 +1298,7 @@ CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid
         ("Collect_GeogData", "switch", "Collect required geog data files."),
         ("Go_Ungrib", "switch", "Run Ungrib (Decode GRIB/NC forcing)."),
         ("Go_Metgrid", "switch", "Run Metgrid (Interpolate met data)."),
+        ("Skip_Completed_Metgrid", "switch", "Reuse complete met_em batches; defaults on for active multi-group processing."),
         ("Go_Real", "switch", "Run Real (Generate wrfinput/wrfbdy)."),
         ("Go_VBS", "switch", "Run VBS (Vegetation/Albedo processing)."),
         ("Copy_CWRF_Output", "switch", "Copy final CWRF inputs to case dir."),

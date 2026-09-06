@@ -172,6 +172,7 @@ CPS 主要由两个配置文件控制：
 
 - 临时文件清理策略
 - 时间分块选项
+- 已完整 `met_em` 批次的复用开关（多组 GroupBy 流程缺省开启，其他流程缺省关闭）
 - CWRF / CoLM 的 CPU 核数设置
 - `Go_Geogrid`、`Go_MakeSrf`、`Go_Coupler_Prep` 等模块开关
 - 输出收集开关

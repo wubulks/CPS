@@ -699,6 +699,36 @@ def Second_ICBC(casecfg, envcfg, gridname):
                 logger.warning(f'{Consts.S4}Please check the Enable_TimeChunk flag in the configuration file.')
                 Enable_TimeChunk = False
 
+        groupby_active = Enable_TimeChunk and GroupBy > 1
+        Skip_Completed_Metgrid = casecfg.getboolean(
+            'PrepCWRF',
+            'Skip_Completed_Metgrid',
+            fallback=groupby_active,
+        )
+
+        def reuse_completed_metgrid(start_time, end_time):
+            if not Skip_Completed_Metgrid:
+                return False
+            if not ICBC.Check_Metgrid_Batch_Finish(
+                casecfg,
+                envcfg,
+                gridname,
+                start_time,
+                end_time,
+                level=None,
+            ):
+                return False
+
+            time_str = (
+                f'{start_time.year}-{start_time.month:02d}-{start_time.day:02d}_'
+                f'{end_time.year}-{end_time.month:02d}-{end_time.day:02d}'
+            )
+            logger.info(
+                f'{Consts.S4}Reuse complete met_em batch {time_str}; '
+                'skip CWPS linking, Ungrib, and Metgrid.'
+            )
+            return True
+
         if Enable_TimeChunk: # slice process the whole period
             t = time.gmtime(timespan * 4 * 60)
             days = t.tm_yday - 1
@@ -714,6 +744,7 @@ def Second_ICBC(casecfg, envcfg, gridname):
 
             timelist = Tools.Split_Days(StartTime, EndTime, TimeChunkCount)
             chunk_group_size = (TimeChunkCount + GroupBy - 1) // GroupBy
+            cleanup_ungrib = GroupBy > 1
 
             for group_index in range(GroupBy):
                 group_start = group_index * chunk_group_size
@@ -723,10 +754,19 @@ def Second_ICBC(casecfg, envcfg, gridname):
 
                 group_args = []
                 for start_time, end_time in timelist[group_start:group_end]:
+                    if reuse_completed_metgrid(start_time, end_time):
+                        continue
                     group_args.append((casecfg, envcfg, gridname, start_time, end_time))
                     ICBC.Link_CWPS_Files(
                         casecfg, envcfg, gridname, start_time, end_time
                     )
+
+                if not group_args:
+                    logger.info(
+                        f"{Consts.S4}✦  All batches in Metgrid group "
+                        f"{group_index + 1}/{GroupBy} were reused."
+                    )
+                    continue
 
                 workers = len(group_args)
                 logger.info(
@@ -743,13 +783,14 @@ def Second_ICBC(casecfg, envcfg, gridname):
                 )
 
                 # --- Metgrid ---
-                Tools.Run_Parallel(ICBC.Metgrid, group_args, workers, "Metgrid")
+                metgrid_args = [args + (cleanup_ungrib,) for args in group_args]
+                Tools.Run_Parallel(ICBC.Metgrid, metgrid_args, workers, "Metgrid")
                 logger.info(
                     f"{Consts.S4}✦  Metgrid group "
                     f"{group_index + 1}/{GroupBy} Complete!"
                 )
 
-            logger.info(f"{Consts.S4}✦  All Ungrib and Metgrid groups Complete!")
+            logger.info(f"{Consts.S4}✦  All Ungrib and Metgrid groups Complete or Reused!")
          
             # --- Real --- 
             ICBC.Real(casecfg, envcfg,  gridname, timelist)
@@ -761,13 +802,14 @@ def Second_ICBC(casecfg, envcfg, gridname):
             start_time = StartTime
             end_time = EndTime + timedelta(hours=12) # add 12 hours to include the last time
             timelist = [(start_time, end_time)]
-            ICBC.Link_CWPS_Files(casecfg, envcfg, gridname, start_time, end_time)
-            # --- Ungrib ---
-            ICBC.Ungrib(casecfg, envcfg, gridname, start_time, end_time)
-            logger.info(f'{Consts.S4}✦  Ungrib Step Complete!')
-            # --- Metgrid ---
-            ICBC.Metgrid(casecfg, envcfg, gridname, start_time, end_time)
-            logger.info(f'{Consts.S4}✦  Metgrid Step Complete!')
+            if not reuse_completed_metgrid(start_time, end_time):
+                ICBC.Link_CWPS_Files(casecfg, envcfg, gridname, start_time, end_time)
+                # --- Ungrib ---
+                ICBC.Ungrib(casecfg, envcfg, gridname, start_time, end_time)
+                logger.info(f'{Consts.S4}✦  Ungrib Step Complete!')
+                # --- Metgrid ---
+                ICBC.Metgrid(casecfg, envcfg, gridname, start_time, end_time)
+                logger.info(f'{Consts.S4}✦  Metgrid Step Complete!')
             # --- Real --- 
             ICBC.Real(casecfg, envcfg, gridname, timelist)
             logger.info(f'{Consts.S4}✦  Real Step Complete!')

@@ -9,6 +9,7 @@ Go_SAI = True
 Collect_GeogData = True
 Go_Ungrib = True
 Go_Metgrid = True
+Skip_Completed_Metgrid = True
 Go_Real = True
 Go_VBS = True
 Copy_CWRF_Output = True

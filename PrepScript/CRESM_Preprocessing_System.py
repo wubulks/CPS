@@ -214,6 +214,7 @@ def Check_AllConfig(case_cfg, env_cfg, gridname, level='INFO'):
     BOOL_CHECKS = [
         # PrepCWRF
         ('PrepCWRF', 'Go_Geogrid'), ('PrepCWRF', 'Go_Ungrib'), ('PrepCWRF', 'Go_Metgrid'),
+        ('PrepCWRF', 'Skip_Completed_Metgrid'),
         ('PrepCWRF', 'Go_Real'),    ('PrepCWRF', 'Go_VBS'),    ('PrepCWRF', 'Copy_CWRF_Output'),
         # PrepCoLM
         ('PrepCoLM', 'Go_MeshGrid'), ('PrepCoLM', 'Go_MakeSrf'), ('PrepCoLM', 'Go_MakeIni'),
