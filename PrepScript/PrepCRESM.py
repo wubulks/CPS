@@ -94,7 +94,7 @@ def Coupler_Prep(casecfg, envcfg, gridname):
         log_file = f'{CaseOutputPath}/{gridname}/Log/log.cpldata_step2'
         os.system(f'rm -f {log_file}')
         cmd = f'conda run -n {xesmfenv} --no-capture-output python -u generate_cpl7_wgt_ALO_step2.py {gridname} > {log_file} 2>&1' 
-        Tools.Run_CMD(cmd, "Run generate_cpl7_wgt_ALO_step2.ncl")
+        Tools.Run_CMD(cmd, "Run generate_cpl7_wgt_ALO_step2.py")
         cmd = f'mv PET0.RegridWeightGen.Log ./cpl7data'
         
         # mv log
