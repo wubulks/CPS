@@ -1,6 +1,6 @@
 # CRESM Preprocessing System (CPS)
 
-## **Version: v1.2.5**
+## **Version: v1.2.6**
 
 [![License: GPL](https://img.shields.io/badge/License-GPL-blue.svg)](#license)
 [![Platform: Linux](https://img.shields.io/badge/Platform-Linux-success.svg)](#requirements)
@@ -28,8 +28,13 @@ CPS 是为新一代国产区域地球系统模式 **CRESM** 开发的数据前�
 
 ## 更新日志
 
-### v1.2.5
+### v1.2.6
 
+- 新增 CPL7 Step1 的 ESMF 权重生成后端：`Use_ESMF=True` 时由 NCL 生成网格描述文件，再由 `ESMF_RegridWeightGen` 生成权重；关闭时保留原有 NCL 全流程。
+- 新增 Python 权重生成与 NCL/ESMF 权重对比工具，覆盖 CWRF、CoLM 与 FVCOM 耦合网格。
+- 增加 `SYS_ESMF`、`ESMFWeightGenPath` 和 `ncllibs2py` 依赖配置，并同步更新安装说明与用户手册。
+
+### v1.2.5
 - 吸收并优化 ICBC 时间分块处理功能，新增 `TimeChunkCount` 与 `TimeChunkGroupSize` 配置。(By Hongjing Chen)
 - 新增 Metgrid 结果复用、完成标记和 Ungrib 文件清理功能，并将配置名称调整为 `Reuse_Metgrid` 与 `Clean_Ungrib`。(By Hongjing Chen)
 - 支持通过 `CoLMNMLPath` 指定完整 CoLM namelist，CPS 仅修改自身负责的配置项并保留其他用户设置。By Hongjing Chen)
@@ -174,7 +179,20 @@ conda env create -f Chaomodis.yml
 - `cresm_xesmf`：网格生成与重映射
 - `Chaomodis`：FVC / IGBP / LAI / SAI 相关处理
 
-### 3. 安装 CRESM_ToolBox
+### 3. 安装独立的 ncllibs2py 库
+
+当 `BaseInfo.Use_ESMF = True` 时，CPL7 Step1 仍由 NCL 生成网格描述文件，
+Python 权重生成器使用独立的 `ncllibs2py` 库辅助 ESMF 权重计算。该依赖已列入
+`conda_envs/cresm.yml`；若手动维护 `cresm` 环境，可执行：
+
+```bash
+conda run -n cresm python -m pip install --no-build-isolation \
+    git+https://github.com/wubulks/ncllibs2py.git
+```
+
+Step2 仍然使用 `cresm_xesmf` 环境。
+
+### 4. 安装 CRESM_ToolBox
 
 在配置好 `Makeoptions.ini` 之后，可使用以下命令安装工具箱：
 
@@ -196,12 +214,12 @@ CPS 运行时读取 `case.ini` 和 `env.ini`。`Config/` 目录中的文件仅�
 该文件定义系统**在哪里运行**、**使用什么环境**。如需切换 GNU TMS、GNU Hydro 或 Intel 环境，请参考 `Config/` 中对应的环境文件并更新 `env.ini`。典型内容包括：
 
 - CWRF / CoLM 环境脚本路径
-- NCL 环境脚本路径
+- NCL / ESMF 环境脚本路径
 - Conda 环境名称
 - 脚本目录路径
 - CRESM 工具箱路径
 - 原始数据与运行数据路径
-- `ncks`、`cdo`、`ncl` 等外部程序路径
+- `ncks`、`cdo`、`ncl`、`ESMF_RegridWeightGen` 等外部程序路径
 - forcing 数据集定义
 
 ### `case.ini`
@@ -209,6 +227,7 @@ CPS 运行时读取 `case.ini` 和 `env.ini`。`Config/` 目录中的文件仅�
 该文件定义系统**运行什么**、**面向哪个实验**。用户可以参考 `Config/case.ini.template` 填写案例配置。典型内容包括：
 
 - 临时文件清理策略
+- CPL7 权重生成后端选择（`Use_ESMF`）
 - 时间分块选项
 - CWRF / CoLM 的 CPU 核数设置
 - `Go_Geogrid`、`Go_MakeSrf`、`Go_Coupler_Prep` 等模块开关

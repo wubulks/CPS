@@ -336,7 +336,7 @@ def Check_AllConfig(case_cfg, env_cfg, gridname, level='INFO', check_domain=Fals
     REQUIRED_OPTIONS = {
         'BaseInfo': [
             'CleanTempFiles', 'Use_CoLMLAI', 'Use_CoLMSeaMask', 'Enable_TimeChunk',
-            'TimeChunkCount', 'TimeChunkGroupSize', 'Reuse_Metgrid', 'Clean_Ungrib',
+            'TimeChunkCount', 'TimeChunkGroupSize', 'Reuse_Metgrid', 'Clean_Ungrib', 'Use_ESMF',
         ],
         'PrepCWRF': [
             'CWRFCoreNum', 'Go_ShowDomain', 'Go_Geogrid', 'Go_FVC', 'Go_LAI', 'Go_IGBP',
@@ -381,6 +381,7 @@ def Check_AllConfig(case_cfg, env_cfg, gridname, level='INFO', check_domain=Fals
         ('BaseInfo', 'CleanTempFiles'), ('BaseInfo', 'Enable_TimeChunk'), ('BaseInfo', 'Use_CoLMLAI'), ('BaseInfo', 'Use_CoLMSeaMask'),
         ('BaseInfo', 'Reuse_Metgrid'),
         ('BaseInfo', 'Clean_Ungrib'),
+        ('BaseInfo', 'Use_ESMF'),
     ]
 
     # [D] 数值与逻辑检查列表 (Section, Key, ValidatorLambda, ErrorMsg)
@@ -473,6 +474,11 @@ def Check_AllConfig(case_cfg, env_cfg, gridname, level='INFO', check_domain=Fals
                 val = case_cfg.getboolean(sec, key)
                 # 布尔值通常不需要刷屏，设为 Detail (DEBUG模式可见)
                 _ok(f"{key.ljust(25)}: {val}", is_detail=True)
+
+    use_esmf = False
+    if case_cfg.has_option('BaseInfo', 'Use_ESMF'):
+        use_esmf_value = case_cfg.get('BaseInfo', 'Use_ESMF').strip().lower()
+        use_esmf = use_esmf_value in boolean_values and case_cfg.getboolean('BaseInfo', 'Use_ESMF')
 
     time_chunk_enabled = False
     if case_cfg.has_option('BaseInfo', 'Enable_TimeChunk'):
@@ -584,6 +590,29 @@ def Check_AllConfig(case_cfg, env_cfg, gridname, level='INFO', check_domain=Fals
                 _ok(f"{key.ljust(25)}: OK", is_detail=True) # 路径检查在 DEBUG 显示
         else:
             _error(f"Env [Paths] missing key: {key}")
+
+    if use_esmf:
+        if env_cfg.has_option('Paths', 'ESMFWeightGenPath'):
+            esmf_weight_gen_path = env_cfg.get('Paths', 'ESMFWeightGenPath').strip()
+            if not esmf_weight_gen_path or esmf_weight_gen_path.lower() == 'none':
+                _error("Path is empty: [ESMFWeightGenPath]")
+            elif not os.path.isfile(esmf_weight_gen_path):
+                _error(f"Path not found (ESMFWeightGenPath): {esmf_weight_gen_path}")
+            else:
+                _ok(f"{'ESMFWeightGenPath'.ljust(25)}: OK", is_detail=True)
+        else:
+            _error("Env [Paths] missing key: ESMFWeightGenPath")
+
+        if env_cfg.has_option('Environment', 'SYS_ESMF'):
+            sys_esmf = env_cfg.get('Environment', 'SYS_ESMF').strip()
+            if not sys_esmf or sys_esmf.lower() == 'none':
+                _error("Value is empty: [SYS_ESMF]")
+            elif not os.path.exists(sys_esmf):
+                _error(f"SYS env path not found (SYS_ESMF): {sys_esmf}")
+            else:
+                _ok(f"{'SYS_ESMF'.ljust(25)}: OK", is_detail=True)
+        else:
+            _error("Env [Environment] missing key: SYS_ESMF")
 
     if case_cfg.has_option(gridname, 'CoLMNMLPath'):
         colm_nml_path = case_cfg.get(gridname, 'CoLMNMLPath').strip()

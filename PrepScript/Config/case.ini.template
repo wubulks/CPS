@@ -1,5 +1,6 @@
 [BaseInfo]
 CleanTempFiles         = False
+Use_ESMF               = True
 Use_CoLMLAI            = True
 Use_CoLMSeaMask        = True
 Enable_TimeChunk       = True
@@ -126,4 +127,3 @@ StandLon               = 110.0
 BdyWidth               = 15
 LakeThreshold          = 0.50
 MeshSize               = 1
-

@@ -34,9 +34,14 @@ def Coupler_Prep(casecfg, envcfg, gridname):
     ScriptPath = envcfg.get('Paths', 'ScriptPath')
     NCLPath = envcfg.get('Paths', 'NCLPath')
     SYS_NCL = envcfg.get('Environment', 'SYS_NCL')
+    cresmenv = envcfg.get('Environment', 'CONDA_CRESM')
     xesmfenv = envcfg.get('Environment', 'CONDA_XESMF')
     CaseOutputPath = casecfg.get(gridname, 'CaseOutputPath')
     Go_Coupler_Prep = casecfg.getboolean('PrepCRESM', 'Go_Coupler_Prep')
+    Use_ESMF = casecfg.getboolean('BaseInfo', 'Use_ESMF')
+    if Use_ESMF:
+        SYS_ESMF = envcfg.get('Environment', 'SYS_ESMF')
+        ESMFWeightGenPath = envcfg.get('Paths', 'ESMFWeightGenPath')
     StartTime = casecfg.get(gridname, 'StartTime')
     StartTime = datetime.strptime(StartTime, '%Y-%m-%d_%H:%M:%S')
     ProcessScriptPath = f"{ScriptPath}/Resources/ProcessScript"
@@ -77,7 +82,8 @@ def Coupler_Prep(casecfg, envcfg, gridname):
         Tools.File_Exist(f'{CaseOutputPath}/{gridname}/PrepCoLM/{gridname}/mesh_cwrf_{gridname}.nc', level='error')
         Tools.Link(f'{CaseOutputPath}/{gridname}/PrepCoLM/{gridname}/mesh_cwrf_{gridname}.nc', f'./{gridname}/mesh_cwrf_{gridname}.nc')
 
-        # link cpl7 weight generation script
+        # link both Step1 backends; Use_ESMF selects the active one
+        Tools.Link(f'{ProcessScriptPath}/PrepCRESM/generate_cpl7_wgt_ALO_step1.py', f'./generate_cpl7_wgt_ALO_step1.py')
         Tools.Link(f'{ProcessScriptPath}/PrepCRESM/generate_cpl7_wgt_ALO_step1.ncl', f'./generate_cpl7_wgt_ALO_step1.ncl')
         Tools.Link(f'{ProcessScriptPath}/PrepCRESM/generate_cpl7_wgt_ALO_step2.py', f'./generate_cpl7_wgt_ALO_step2.py')
         Tools.Link(f'{RootToolBox}/Data/CRESM_OCEAN/CN_COAST_restart_modified2019.nc', f'./CN_COAST_restart_modified2019.nc')
@@ -86,8 +92,21 @@ def Coupler_Prep(casecfg, envcfg, gridname):
         logger.info(f'{Consts.S4}==========> Prep CRESM Step1 <==========')
         log_file = f'{CaseOutputPath}/{gridname}/Log/log.cpldata_step1'
         os.system(f'rm -f {log_file}')
-        cmd = rf'{NCLPath} generate_cpl7_wgt_ALO_step1.ncl geogName=\"{gridname}\" > {log_file} 2>&1'
-        Tools.Run_CMD(cmd, "Run generate_cpl7_wgt_ALO_step1.ncl", env=SYS_NCL)
+        if Use_ESMF:
+            descriptor_log_file = f'{CaseOutputPath}/{gridname}/Log/log.cpldata_step1_descriptors'
+            os.system(f'rm -f {descriptor_log_file}')
+            cmd = rf'{NCLPath} generate_cpl7_wgt_ALO_step1.ncl geogName="{gridname}" only_description=True > {descriptor_log_file} 2>&1'
+            Tools.Run_CMD(cmd, "Run NCL CPL7 descriptor generation", env=SYS_NCL)
+            step1_command = [
+                'conda', 'run', '-n', cresmenv, '--no-capture-output', 'python', '-u',
+                'generate_cpl7_wgt_ALO_step1.py', gridname, '--esmf', ESMFWeightGenPath,
+                '--weights-only',
+            ]
+            cmd = f'{shlex.join(step1_command)} > {shlex.quote(log_file)} 2>&1'
+            Tools.Run_CMD(cmd, "Run generate_cpl7_wgt_ALO_step1.py", env=SYS_ESMF)
+        else:
+            cmd = rf'{NCLPath} generate_cpl7_wgt_ALO_step1.ncl geogName=\"{gridname}\" > {log_file} 2>&1'
+            Tools.Run_CMD(cmd, "Run generate_cpl7_wgt_ALO_step1.ncl", env=SYS_NCL)
         
         logger.info(f'{Consts.S4}==========> Prep CRESM Step2 <==========')
         log_file = f'{CaseOutputPath}/{gridname}/Log/log.cpldata_step2'

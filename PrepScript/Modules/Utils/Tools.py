@@ -1342,6 +1342,7 @@ CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid
 
     data_base = [
         ("CleanTempFiles", "switch", "Delete intermediate files? [bold red][!] CAUTION[/]"),
+        ("Use_ESMF", "switch", "Use NCL for CPL7 descriptors and ESMF for Step1 weights; False keeps the NCL backend."),
         ("Use_CoLMLAI", "switch", "Use CoLM's LAI data instead of MODIS for CWRF."),
         ("Use_CoLMSeaMask", "switch", "Use CoLM's Sea Mask data to identify sea areas. False means using shpfile lake/sea mask."),
         ("Enable_TimeChunk", "switch", "Enable time-splitting for long simulations."),
@@ -1426,6 +1427,7 @@ CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid
         ("SYS_CWRF", "file", "Path to CWRF environment setup script (to be sourced)."),
         ("SYS_CoLM", "file", "Path to CoLM environment setup script (to be sourced)."),
         ("SYS_NCL", "file", "Path to NCL environment setup script (to be sourced)."),
+        ("SYS_ESMF", "file", "Path to ESMF environment setup script (used when Use_ESMF=True)."),
         ("CONDA_CRESM", "str", "Conda environment name for CRESM preprocessing tools."),
         ("CONDA_XESMF", "str", "Conda environment name for XESMF remapping."),
         ("CONDA_CHAO", "str", "Conda environment name for Chaomodis tools."),
@@ -1453,6 +1455,7 @@ CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid
         ("NCOPath", "exe", "Path to 'ncks' executable"),
         ("CDOPath", "exe", "Path to 'cdo' executable."),
         ("NCLPath", "exe", "Path to 'ncl' executable."),
+        ("ESMFWeightGenPath", "exe", "Path to ESMF_RegridWeightGen (used when Use_ESMF=True)."),
     ]
     create_section_table("[Paths]", data_paths, color="green", width=MAX_WIDTH, indent_left=4)
 
