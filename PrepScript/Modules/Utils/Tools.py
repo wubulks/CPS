@@ -44,7 +44,6 @@ logger = logging.getLogger("CRESMPrep." + __name__)
 def Run_CMD(cmd, description=None, env=None):
     """
     Execute shell command with optional environment source.
-    Uses interactive bash shell (-i) to ensure proper environment loading.
     """
     if description:
         logger.debug(description)
@@ -56,10 +55,10 @@ def Run_CMD(cmd, description=None, env=None):
             raise FileNotFoundError(f"Environment file not found: {env}")
         logger.debug(f"Sourcing environment: {env}")
     
-    # 构建最终命令 - 使用bash -i -c确保交互式shell模式
+    # 构建最终命令 
     if Consts.UseExternalEnv and env:
-        # 使用交互式shell模式，这更接近您在终端中的操作
-        final_cmd = f"bash -i -c 'source {env} && {cmd}'"
+        # 使用非交互式shell模式，这更接近您在终端中的操作
+        final_cmd = f"bash -c 'source {env} && {cmd}'"
     else:
         final_cmd = cmd
     
