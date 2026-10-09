@@ -669,6 +669,7 @@ def Copy_Exist_GeogData(casecfg, envcfg, gridname, GeogDataPath):
 
     # copy to PrepCWRF/gridname/Geog_{gridname}
     cmd = f'rm -rf {CaseOutputPath}/{gridname}/PrepCWRF/{gridname}/Geog_{gridname}'
+    Tools.Run_CMD(cmd, f"Remove old Geog_{gridname} in PrepCWRF/{gridname}")
     Tools.Copy(GeogDataPath, f'{CaseOutputPath}/{gridname}/PrepCWRF/{gridname}/Geog_{gridname}')
 
     logger.info(f'{Consts.S4}◉  Copy Geog Gather Data finished!\n\n')
