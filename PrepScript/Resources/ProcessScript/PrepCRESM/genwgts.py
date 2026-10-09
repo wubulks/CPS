@@ -85,7 +85,7 @@ class FVCOM_MESH(xe.backend.Mesh):
     def get_nv(self):
         return self._nv
 
-def 
+
 
 hycomfile = xr.open_dataset("./sst.nc")
 lon = hycomfile.lon.values

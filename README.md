@@ -32,7 +32,7 @@ CPS 是为新一代国产区域地球系统模式 **CRESM** 开发的数据前�
 
 - 新增 CPL7 Step1 的 ESMF 权重生成后端：`Use_ESMF=True` 时由 NCL 生成网格描述文件，再由 `ESMF_RegridWeightGen` 生成权重；关闭时保留原有 NCL 全流程。
 - 新增 Python 权重生成与 NCL/ESMF 权重对比工具，覆盖 CWRF、CoLM 与 FVCOM 耦合网格。
-- 增加 `SYS_ESMF`、`ESMFWeightGenPath` 和 `ncllibs2py` 依赖配置，并同步更新安装说明与用户手册。
+- 将 `ncllibs2py` 固定为 PyPI 发布版 `0.2.1` 并纳入 `conda_envs/cresm.yml`，同步更新安装说明与用户手册。
 
 ### v1.2.5
 - 吸收并优化 ICBC 时间分块处理功能，新增 `TimeChunkCount` 与 `TimeChunkGroupSize` 配置。(By Hongjing Chen)
@@ -182,12 +182,15 @@ conda env create -f Chaomodis.yml
 ### 3. 安装独立的 ncllibs2py 库
 
 当 `BaseInfo.Use_ESMF = True` 时，CPL7 Step1 仍由 NCL 生成网格描述文件，
-Python 权重生成器使用独立的 `ncllibs2py` 库辅助 ESMF 权重计算。该依赖已列入
-`conda_envs/cresm.yml`；若手动维护 `cresm` 环境，可执行：
+Python 权重生成器使用独立的 `ncllibs2py` 库辅助 ESMF 权重计算。依赖已固定为 PyPI 发布版
+`ncllibs2py==0.2.1`，并列入 `conda_envs/cresm.yml`；创建或更新 `cresm` 环境时由 pip 安装。
+若需在已有环境手动安装，可执行：
+
+当前 PyPI 发布包是源码包，安装时需本机 C 编译器；包内含生成的 C 源码，因此无需 Cython。
 
 ```bash
 conda run -n cresm python -m pip install --no-build-isolation \
-    git+https://github.com/wubulks/ncllibs2py.git
+    ncllibs2py==0.2.1
 ```
 
 Step2 仍然使用 `cresm_xesmf` 环境。
