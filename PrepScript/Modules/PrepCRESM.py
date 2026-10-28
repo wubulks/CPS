@@ -38,6 +38,7 @@ def Coupler_Prep(casecfg, envcfg, gridname):
     xesmfenv = envcfg.get('Environment', 'CONDA_XESMF')
     CaseOutputPath = casecfg.get(gridname, 'CaseOutputPath')
     Go_Coupler_Prep = casecfg.getboolean('PrepCRESM', 'Go_Coupler_Prep')
+    land_only = casecfg.getboolean('PrepCRESM', 'CoLM_Weights_Land_Only')
     Use_ESMF = casecfg.getboolean('BaseInfo', 'Use_ESMF')
     if Use_ESMF:
         SYS_ESMF = envcfg.get('Environment', 'SYS_ESMF')
@@ -95,7 +96,7 @@ def Coupler_Prep(casecfg, envcfg, gridname):
         if Use_ESMF:
             descriptor_log_file = f'{CaseOutputPath}/{gridname}/Log/log.cpldata_step1_descriptors'
             os.system(f'rm -f {descriptor_log_file}')
-            cmd = rf'{NCLPath} generate_cpl7_wgt_ALO_step1.ncl geogName="{gridname}" only_description=True > {descriptor_log_file} 2>&1'
+            cmd = rf'{NCLPath} generate_cpl7_wgt_ALO_step1.ncl geogName="{gridname}" landOnly={land_only} only_description=True > {descriptor_log_file} 2>&1'
             Tools.Run_CMD(cmd, "Run NCL CPL7 descriptor generation", env=SYS_NCL)
             step1_command = [
                 'conda', 'run', '-n', cresmenv, '--no-capture-output', 'python', '-u',
@@ -105,13 +106,14 @@ def Coupler_Prep(casecfg, envcfg, gridname):
             cmd = f'{shlex.join(step1_command)} > {shlex.quote(log_file)} 2>&1'
             Tools.Run_CMD(cmd, "Run generate_cpl7_wgt_ALO_step1.py", env=SYS_ESMF)
         else:
-            cmd = rf'{NCLPath} generate_cpl7_wgt_ALO_step1.ncl geogName=\"{gridname}\" > {log_file} 2>&1'
+            cmd = rf'{NCLPath} generate_cpl7_wgt_ALO_step1.ncl geogName=\"{gridname}\" landOnly={land_only} > {log_file} 2>&1'
             Tools.Run_CMD(cmd, "Run generate_cpl7_wgt_ALO_step1.ncl", env=SYS_NCL)
         
         logger.info(f'{Consts.S4}==========> Prep CRESM Step2 <==========')
         log_file = f'{CaseOutputPath}/{gridname}/Log/log.cpldata_step2'
         os.system(f'rm -f {log_file}')
-        cmd = f'conda run -n {xesmfenv} --no-capture-output python -u generate_cpl7_wgt_ALO_step2.py {gridname} > {log_file} 2>&1' 
+        nonland_arg = '' if land_only else ' --include-nonland-colm'
+        cmd = f'conda run -n {xesmfenv} --no-capture-output python -u generate_cpl7_wgt_ALO_step2.py {gridname}{nonland_arg} > {log_file} 2>&1'
         Tools.Run_CMD(cmd, "Run generate_cpl7_wgt_ALO_step2.py")
         cmd = f'mv PET0.RegridWeightGen.Log ./cpl7data'
         

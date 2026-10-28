@@ -1,6 +1,10 @@
 load "$NCARG_ROOT/lib/ncarg/nclscripts/esmf/ESMF_regridding.ncl"
 setfileoption("nc","Format","NetCDF4")
 
+if (.not. isvar("landOnly")) then
+  landOnly=True
+end if
+
 if (.not. isvar("only_description")) then
   only_description = False
 end if
@@ -78,10 +82,6 @@ unstructured_to_ESMF(fvcom_e_des, lat_c, lon_c, opt1)
 ; colm
 f3=addfile(colmfilname, "r")
 
-f99=addfile(elmind, "r")
-elmindex=f99->elmindex
-elmindex:=toint(elmindex)
-
 colm_lat=f3->XLAT_M(0,:,:)
 colm_lon=f3->XLONG_M(0,:,:)
 colmsizes=dimsizes(colm_lat)
@@ -90,8 +90,13 @@ colm_lonsizes=colmsizes(1)
 colm_lat_1d_re=reshape(colm_lat(west_east|:,south_north|:),(/colm_latsizes*colm_lonsizes/))
 colm_lon_1d_re=reshape(colm_lon(west_east|:,south_north|:),(/colm_latsizes*colm_lonsizes/))
 
-colm_lat_1d_re := colm_lat_1d_re(elmindex-1)
-colm_lon_1d_re := colm_lon_1d_re(elmindex-1)
+if (landOnly) then
+  f99=addfile(elmind, "r")
+  elmindex=f99->elmindex
+  elmindex:=toint(elmindex)
+  colm_lat_1d_re := colm_lat_1d_re(elmindex-1)
+  colm_lon_1d_re := colm_lon_1d_re(elmindex-1)
+end if
 
 unstructured_to_ESMF(colm_des, colm_lat_1d_re, colm_lon_1d_re, opt1)
 

@@ -638,39 +638,54 @@ def Copy_Exist_GeogData(casecfg, envcfg, gridname, GeogDataPath):
     logger.info(f'{Consts.S4}==========> Skip SAI <==========')
     logger.info(f'{Consts.S4}==========> Skip IGBP <==========')
     logger.info(f'{Consts.S4}==========> Skip Collect GeogData <==========')
+
+    first_static_geog = os.path.abspath(
+        f'{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/Geog_{gridname}'
+    )
+    runtime_geog = os.path.abspath(
+        f'{CaseOutputPath}/{gridname}/PrepCWRF/{gridname}/Geog_{gridname}'
+    )
+    src_geog = os.path.abspath(GeogDataPath)
+
     logger.info(f'{Consts.S4}-> GeogDataPath: {GeogDataPath}')
-    logger.info(f'{Consts.S4}-> Copy GeogDataPath to {CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/Geog_{gridname}')
-    logger.info(f'{Consts.S4}-> Copy GeogDataPath to {CaseOutputPath}/{gridname}/PrepCWRF/{gridname}/Geog_{gridname}')
+    logger.info(f'{Consts.S4}-> Copy GeogDataPath to {first_static_geog}')
+    logger.info(f'{Consts.S4}-> Copy GeogDataPath to {runtime_geog}')
 
-    # cd to CaseOutputPath/gridname/PrepCWRF
-    os.chdir(f'{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/Geog_{gridname}/')
+    if src_geog == first_static_geog:
+        logger.info(f'{Consts.S4}-> Source is already First_StaticData, skip self-copy')
+    else:
+        # cd to CaseOutputPath/gridname/PrepCWRF
+        os.chdir(f'{first_static_geog}/')
 
-    # mkdir
-    cmd = f'mkdir -p {CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/Geog_{gridname}/sbcs'
-    Tools.Run_CMD(cmd, "Create directory sbcs")
+        # mkdir
+        cmd = f'mkdir -p {first_static_geog}/sbcs'
+        Tools.Run_CMD(cmd, "Create directory sbcs")
 
-    # copy placeholder data to First_StaticData/Geog_{gridname}
-    Tools.Copy(laifiles, f'{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/Geog_{gridname}/sbcs/')
-    Tools.Copy(saifiles, f'{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/Geog_{gridname}/sbcs/')
-    Tools.Copy(albbfiles, f'{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/Geog_{gridname}/sbcs/')
-    Tools.Copy(vegbfiles, f'{CaseOutputPath}/{gridname}/PrepCWRF/First_StaticData/Geog_{gridname}/sbcs/')
+        # copy placeholder data to First_StaticData/Geog_{gridname}
+        Tools.Copy(laifiles, f'{first_static_geog}/sbcs/')
+        Tools.Copy(saifiles, f'{first_static_geog}/sbcs/')
+        Tools.Copy(albbfiles, f'{first_static_geog}/sbcs/')
+        Tools.Copy(vegbfiles, f'{first_static_geog}/sbcs/')
 
-    # copy geo_em.d01 to First_StaticData/Geog_{gridname}
-    Tools.Copy(geo_em_veg_path, f'./geo_em.d01_veg.nc')
-    
-    # copy ocean mask file to First_StaticData/Geog_{gridname}
-    Tools.Copy(ocean_mask_path, './ocean_mask.nc')
+        # copy geo_em.d01 to First_StaticData/Geog_{gridname}
+        Tools.Copy(geo_em_veg_path, f'./geo_em.d01_veg.nc')
 
-    # copy MODIS2CWRF_SBC_d01.nc to First_StaticData/Geog_{gridname}
-    Tools.Copy(MODIS2CWRF_SBC_path, './MODIS2CWRF_SBC_d01.nc')
-    
-    # copy Geog.ID file to First_StaticData/Geog_{gridname}
-    Tools.Copy(GeogIDfile, './Geog.ID')
+        # copy ocean mask file to First_StaticData/Geog_{gridname}
+        Tools.Copy(ocean_mask_path, './ocean_mask.nc')
+
+        # copy MODIS2CWRF_SBC_d01.nc to First_StaticData/Geog_{gridname}
+        Tools.Copy(MODIS2CWRF_SBC_path, './MODIS2CWRF_SBC_d01.nc')
+
+        # copy Geog.ID file to First_StaticData/Geog_{gridname}
+        Tools.Copy(GeogIDfile, './Geog.ID')
 
     # copy to PrepCWRF/gridname/Geog_{gridname}
-    cmd = f'rm -rf {CaseOutputPath}/{gridname}/PrepCWRF/{gridname}/Geog_{gridname}'
-    Tools.Run_CMD(cmd, f"Remove old Geog_{gridname} in PrepCWRF/{gridname}")
-    Tools.Copy(GeogDataPath, f'{CaseOutputPath}/{gridname}/PrepCWRF/{gridname}/Geog_{gridname}')
+    if src_geog == runtime_geog:
+        logger.info(f'{Consts.S4}-> Source is already runtime Geog dir, skip second copy')
+    else:
+        cmd = f'rm -rf {runtime_geog}'
+        Tools.Run_CMD(cmd, f"Remove old Geog_{gridname} in PrepCWRF/{gridname}")
+        Tools.Copy(GeogDataPath, runtime_geog)
 
     logger.info(f'{Consts.S4}◉  Copy Geog Gather Data finished!\n\n')
     os.chdir(old_path)

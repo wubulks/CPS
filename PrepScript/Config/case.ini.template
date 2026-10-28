@@ -38,6 +38,7 @@ Copy_CoLM_Output       = True
 
 [PrepCRESM]
 Go_Coupler_Prep        = True
+CoLM_Weights_Land_Only = True
 
 
 [GatherData]

@@ -344,7 +344,7 @@ def Check_AllConfig(case_cfg, env_cfg, gridname, level='INFO', check_domain=Fals
             'Copy_CWRF_Output',
         ],
         'PrepCoLM': ['CoLMCoreNum', 'Go_MeshGrid', 'Go_MakeSrf', 'Go_MakeIni', 'Go_CoLMTempRun', 'Go_Remap', 'Copy_CoLM_Output'],
-        'PrepCRESM': ['Go_Coupler_Prep'],
+        'PrepCRESM': ['Go_Coupler_Prep', 'CoLM_Weights_Land_Only'],
         'GatherData': ['Collect_CWRF_Output', 'Collect_CoLM_Output', 'Collect_CRESM_Output'],
     }
 
@@ -374,7 +374,7 @@ def Check_AllConfig(case_cfg, env_cfg, gridname, level='INFO', check_domain=Fals
         ('PrepCoLM', 'Go_MeshGrid'), ('PrepCoLM', 'Go_MakeSrf'), ('PrepCoLM', 'Go_MakeIni'),
         ('PrepCoLM', 'Go_CoLMTempRun'), ('PrepCoLM', 'Go_Remap'), ('PrepCoLM', 'Copy_CoLM_Output'),
         # PrepCRESM
-        ('PrepCRESM', 'Go_Coupler_Prep'),
+        ('PrepCRESM', 'Go_Coupler_Prep'), ('PrepCRESM', 'CoLM_Weights_Land_Only'),
         # GatherData
         ('GatherData', 'Collect_CWRF_Output'), ('GatherData', 'Collect_CoLM_Output'), ('GatherData', 'Collect_CRESM_Output'),
         # BaseInfo & Others

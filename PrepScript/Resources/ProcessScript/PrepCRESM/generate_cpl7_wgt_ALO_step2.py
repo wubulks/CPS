@@ -12,10 +12,14 @@ import xesmf as xe
 import esmpy as ESMF
 from netCDF4 import Dataset
 import os
-import sys
+import argparse
 
-argv = sys.argv
-geogName = argv[1]
+parser = argparse.ArgumentParser()
+parser.add_argument("geogName")
+parser.add_argument("--include-nonland-colm", action="store_true")
+args = parser.parse_args()
+geogName = args.geogName
+land_only = not args.include_nonland_colm
 # geogName = "NECN_15km"
 cwrffilname = geogName+"/geo_em.d01.nc"
 colmfilname = geogName+"/colm_grd.nc"  #colm can have the same or a different grid as cwrf
@@ -43,13 +47,13 @@ colmfile = xr.open_dataset(colmfilname)
 colm_lon = colmfile['XLONG_M'][0, :, :].values
 colm_lat = colmfile['XLAT_M'][0, :, :].values
 
-fcolmdata = xr.open_dataset(colmrefdata)
-elmindex = fcolmdata["elmindex"]
-
-colm_mask = np.zeros((colm_lon.shape[0], colm_lon.shape[1]), dtype=bool)
-colm_mask_re = colm_mask.reshape(colm_lon.shape[0]*colm_lon.shape[1], order='F')
-colm_mask_re[elmindex.values-1] = True
-colm_mask = colm_mask_re.reshape(colm_lon.shape[0], colm_lon.shape[1], order='F')
+if land_only:
+    fcolmdata = xr.open_dataset(colmrefdata)
+    elmindex = fcolmdata["elmindex"]
+    colm_mask = np.zeros((colm_lon.shape[0], colm_lon.shape[1]), dtype=bool)
+    colm_mask_re = colm_mask.reshape(colm_lon.shape[0]*colm_lon.shape[1], order='F')
+    colm_mask_re[elmindex.values-1] = True
+    colm_mask = colm_mask_re.reshape(colm_lon.shape[0], colm_lon.shape[1], order='F')
 #colm_mask_da = xr.DataArray(colm_mask)
 #colm_mask_da.to_netcdf("./colm_mask.nc")
 
@@ -58,7 +62,10 @@ colm_mask = colm_mask_re.reshape(colm_lon.shape[0], colm_lon.shape[1], order='F'
 # colm_mask = ~np.isnan(colm_data)  # True 表示数据有效（非 NaN）
 # fcolmdata.close()
 
-colm_esmfgrid = xe.backend.Grid.from_xarray(colm_lon, colm_lat, mask=colm_mask)
+if land_only:
+    colm_esmfgrid = xe.backend.Grid.from_xarray(colm_lon, colm_lat, mask=colm_mask)
+else:
+    colm_esmfgrid = xe.backend.Grid.from_xarray(colm_lon, colm_lat)
 
 # rho grid
 cwrf_s_rho2colm_wgts_bl = pathdir + f"cwrf_s_py2colm_wgts_bl_{geogName}.nc"
@@ -75,7 +82,8 @@ regridder_colm2cwrf_rho_bl = xe.frontend.BaseRegridder(colm_esmfgrid, cwrf_rho_g
 
 regridder_colm2cwrf_rho_pat = xe.frontend.BaseRegridder(colm_esmfgrid, cwrf_rho_grid, method="nearest_s2d", extrap_method="nearest_s2d", filename=colm_2cwrf_s_rho_wgt_pat) #method="patch"
 
-print("elmindex min max:", min(elmindex), max(elmindex))
+if land_only:
+    print("elmindex min max:", min(elmindex), max(elmindex))
 
 py_weights_list = [colm_2cwrf_s_rho_wgt_bl, 
                 colm_2cwrf_s_rho_wgt_pat]
@@ -147,12 +155,17 @@ for pyweights, nclweights in zip(py_weights_list, ncl_weights_list):
         row_data = src.variables['row'][:]  # 读取row数据
         s_data = src.variables['S'][:]      # 读取S数据
     
-    row_mask = np.isin(row_data,elmindex.values)
-    new_n_s = np.sum(row_mask)
+    if land_only:
+        row_mask = np.isin(row_data,elmindex.values)
+        new_row_data = row_data[row_mask]
+        new_col_data = col_data[row_mask]
+        new_S_data = s_data[row_mask]
+    else:
+        new_row_data = row_data
+        new_col_data = col_data
+        new_S_data = s_data
+    new_n_s = len(new_row_data)
     print("n_s should be:", new_n_s)
-    new_row_data = row_data[row_mask]
-    new_col_data = col_data[row_mask]
-    new_S_data = s_data[row_mask]
     print("row before:", min(row_data), max(row_data))
     
     # row_new = np.zeros(n_s, dtype=int)  # 创建一个新的row数组

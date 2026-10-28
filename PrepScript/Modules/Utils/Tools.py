@@ -1055,6 +1055,7 @@ are required.
 
 [PrepCRESM] -- Coupler weight file
   Go_Coupler_Prep          : Generate weights and maps for the coupler.
+  CoLM_Weights_Land_Only   : If True, use only CoLM history elements; False keeps all CoLM grid points in coupling weights.
 
 [GatherData] -- Final Output Collection
   Collect_CWRF_Output      : Gather final CWRF inputs.
@@ -1382,7 +1383,8 @@ CONDA_UNGRIB            : Conda environment name for Ungrib tools (e.g., 'ungrid
     create_section_table("[PrepCoLM]", data_colm, color="blue", width=MAX_WIDTH, indent_left=4)
 
     data_cresm = [
-        ("Go_Coupler_Prep", "switch", "Generate weights and maps for the coupler.")
+        ("Go_Coupler_Prep", "switch", "Generate weights and maps for the coupler."),
+        ("CoLM_Weights_Land_Only", "switch", "Use only CoLM history elements in coupling weights."),
     ]
     create_section_table("[PrepCRESM]", data_cresm, color="blue", width=MAX_WIDTH, indent_left=4)
 
