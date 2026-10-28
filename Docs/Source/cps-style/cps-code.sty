@@ -1,0 +1,63 @@
+% !TeX root = ../manual.tex
+% 行内代码、路径底纹和代码框。
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{cps-style/cps-code}
+
+\RequirePackage{cps-style/cps-common}
+\RequirePackage{fvextra,framed,upquote,xurl}
+
+% 行内代码：linecode 带底纹，linecodenb 无底纹并跟随正文字体。
+\DeclareUrlCommand{\linecodenb}{\urlstyle{same}\color{black}}
+\definecolor{InlineCodeBackground}{HTML}{95F3E7}
+\newsavebox{\InlineCodeBox}
+\newlength{\InlineCodeWidth}
+\newcommand{\linecode}[1]{%
+    \begingroup
+    \urlstyle{tt}%
+    \setlength{\fboxsep}{1.5pt}%
+    \sbox{\InlineCodeBox}{\nolinkurl{#1}}%
+    \setlength{\InlineCodeWidth}{\dimexpr\linewidth-2\fboxsep\relax}%
+    \ifdim\wd\InlineCodeBox>\InlineCodeWidth
+        \colorbox{InlineCodeBackground}{%
+            \parbox[t]{\InlineCodeWidth}{\raggedright\nolinkurl{#1}}%
+        }%
+    \else
+        \colorbox{InlineCodeBackground}{\usebox{\InlineCodeBox}}%
+    \fi
+    \endgroup
+}
+
+% 代码框：源码中的代码统一缩进四个空格。
+\definecolor{shadecolor}{HTML}{F2F5F8}
+\definecolor{CPSCommentColor}{HTML}{737373}
+% 从每行首个 # 开始显示灰色，保留前面的代码、空格和格式命令。
+\ExplSyntaxOn
+\tl_new:N \l_CPSCodeLine_tl
+\tl_const:Nx \c_CPSCommentMarker_tl { \char_generate:nn {35} {12} }
+\cs_generate_variant:Nn \tl_replace_once:Nnn { NVn }
+\cs_new_protected:Npn \CPSFormatCodeText #1
+{
+    \group_begin:
+    \tl_set:Nn \l_CPSCodeLine_tl {#1}
+    \tl_replace_once:NVn \l_CPSCodeLine_tl \c_CPSCommentMarker_tl
+        { \color{CPSCommentColor} \c_CPSCommentMarker_tl }
+    \tl_use:N \l_CPSCodeLine_tl
+    \group_end:
+}
+\ExplSyntaxOff
+\setlength{\FrameSep}{8pt}
+% leftmargin 是 Verbatim 的 xleftmargin 参数的易读别名。
+\define@key{FV}{leftmargin}{\fvset{xleftmargin=#1}}
+\DefineVerbatimEnvironment{CPSCode}{Verbatim}{
+    fontsize=\small,
+    formatcom=\ttfamily\let\FancyVerbFormatText\CPSFormatCodeText,
+    gobble=4,
+    breaklines=true,
+    breakanywhere=true,
+    breaksymbolleft={},
+    baselinestretch=1.08
+}
+\BeforeBeginEnvironment{CPSCode}{\begin{snugshade}}
+\AfterEndEnvironment{CPSCode}{\end{snugshade}}
+
+\endinput

@@ -1,0 +1,85 @@
+% !TeX root = ../manual.tex
+% 强调、提醒和警告；所有文字保持黑色。
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{cps-style/cps-notices}
+
+\RequirePackage{cps-style/cps-common}
+\RequirePackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+
+% 浅色底、细边框和加粗左边线区分提示类型。
+\definecolor{CPSEmphasisBackground}{HTML}{F1F8F6}
+\definecolor{CPSEmphasisBorder}{HTML}{BDD9CE}
+\definecolor{CPSEmphasisAccent}{HTML}{3D7464}
+\definecolor{CPSNoteBackground}{HTML}{FFF9EB}
+\definecolor{CPSNoteBorder}{HTML}{E8D5A9}
+\definecolor{CPSNoteAccent}{HTML}{B98528}
+\definecolor{CPSWarningBackground}{HTML}{FDF1EF}
+\definecolor{CPSWarningBorder}{HTML}{E4B9B2}
+\definecolor{CPSWarningAccent}{HTML}{B34C3C}
+\definecolor{CPSTableNoteColor}{HTML}{666666}
+
+\tcbset{
+    cps notice/.style={
+        enhanced,
+        breakable,
+        coltext=black,
+        coltitle=black,
+        fonttitle=\bfseries,
+        boxrule=0.4pt,
+        titlerule=0.3pt,
+        arc=1.5mm,
+        left=4mm,
+        right=4mm,
+        top=2mm,
+        bottom=2.5mm,
+        toptitle=2mm,
+        bottomtitle=1.5mm,
+        before skip=10pt,
+        after skip=10pt,
+        before upper={\setlength{\parindent}{0pt}}
+    }
+}
+
+% 可用方括号替换默认标题，例如 \begin{CPSWarning}[自动清理缓存]。
+\newtcolorbox{CPSEmphasis}[1][重点]{
+    cps notice,
+    title={#1},
+    colback=CPSEmphasisBackground,
+    colbacktitle=CPSEmphasisBackground,
+    colframe=CPSEmphasisBorder,
+    borderline west={2pt}{0pt}{CPSEmphasisAccent}
+}
+
+\newtcolorbox{CPSNote}[1][提醒]{
+    cps notice,
+    title={#1},
+    colback=CPSNoteBackground,
+    colbacktitle=CPSNoteBackground,
+    colframe=CPSNoteBorder,
+    borderline west={2pt}{0pt}{CPSNoteAccent}
+}
+
+\newtcolorbox{CPSWarning}[1][警告]{
+    cps notice,
+    title={#1},
+    colback=CPSWarningBackground,
+    colbacktitle=CPSWarningBackground,
+    colframe=CPSWarningBorder,
+    borderline west={2pt}{0pt}{CPSWarningAccent}
+}
+
+\newenvironment{CPSTableNote}[1][注]
+    {%
+        \par\vspace{-1.0\baselineskip}%
+        \noindent\begin{minipage}{\linewidth}
+        \small
+        \color{CPSTableNoteColor}%
+        \setlength{\parindent}{0pt}%
+        \textbf{#1：}%
+    }
+    {%
+        \end{minipage}\par\medskip
+    }
+
+\endinput

@@ -1,0 +1,53 @@
+% !TeX root = ../manual.tex
+% 参数表、环境表和长表格格式。
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{cps-style/cps-tables}[2026/10/28 cps-tables]
+
+\RequirePackage{cps-style/cps-common}
+\RequirePackage{cps-style/cps-code}
+\RequirePackage{booktabs,longtable,array,etoolbox}
+
+% 表格
+\AtBeginEnvironment{longtable}{
+    \normalfont
+    \footnotesize
+    \sloppy
+    \setlength{\tabcolsep}{3pt}
+}
+
+% 可选参数用于覆盖当前表格的列格式，省略时使用默认列宽。
+\newenvironment{EnvironmentTable}[1][
+    @{}
+    p{0.48\linewidth}
+    p{0.48\linewidth}
+    @{}
+]{
+    \begin{longtable}{#1}
+        \toprule
+        文件 & 适用环境 \\
+        \midrule
+        \endhead
+}{
+        \bottomrule
+    \end{longtable}
+}
+
+\newenvironment{ParameterTable}[1][
+    @{}
+    p{0.23\linewidth}
+    p{0.09\linewidth}
+    p{0.42\linewidth}
+    >{\raggedright\arraybackslash}p{0.18\linewidth}
+    @{}
+]{
+    \begin{longtable}{#1}
+        \toprule
+        参数名 & 类型 & 说明 & 示例 \\
+        \midrule
+        \endhead
+}{
+        \bottomrule
+    \end{longtable}
+}
+
+\endinput

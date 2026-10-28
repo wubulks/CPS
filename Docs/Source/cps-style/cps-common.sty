@@ -1,0 +1,30 @@
+% !TeX root = ../manual.tex
+% 公共字体和文字颜色。
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{cps-style/cps-common}
+
+\RequirePackage{fontspec,xcolor}
+
+% 字体
+\setmainfont{Times New Roman}
+\setmonofont{CascadiaCode.ttf}[Scale=0.82,AutoFakeBold=2]
+\setCJKmainfont{simsun.ttc}[
+    Path=/mnt/c/Windows/Fonts/,
+    FontIndex=0,
+    AutoFakeBold=2
+]
+\setCJKsansfont{simsun.ttc}[
+    Path=/mnt/c/Windows/Fonts/,
+    FontIndex=0,
+    AutoFakeBold=2
+]
+\setCJKmonofont{simsun.ttc}[
+    Path=/mnt/c/Windows/Fonts/,
+    FontIndex=0,
+    AutoFakeBold=2
+]
+
+
+\AtBeginDocument{\color{black}}
+
+\endinput

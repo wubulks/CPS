@@ -1,0 +1,79 @@
+% !TeX root = ../manual.tex
+% 页面、标题、列表、页眉页脚、封面和目录。
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{cps-style/cps-manual}
+
+\RequirePackage{cps-style/cps-common}
+\RequirePackage[
+    top=25mm,
+    bottom=20mm,
+    left=20mm,
+    right=20mm,
+    headheight=15pt
+]{geometry}
+\RequirePackage{fancyhdr,enumitem,hyperref}
+
+\hypersetup{
+    colorlinks=true,
+    allcolors=black,
+    pdftitle={社区区域气候模式预处理系统用户手册},
+    pdfauthor={CRESM开发团队},
+}
+\ctexset{
+    section={
+        format=\Large\bfseries\color{black},
+        beforeskip=2.2ex,
+        afterskip=1ex
+    },
+    subsection={format=\large\bfseries\color{black}},
+    subsubsection={format=\normalsize\bfseries},
+    secnumdepth=3,
+    tocdepth=3
+}
+
+% 段落与列表
+\setlength{\parskip}{0.35em}
+\setlength{\emergencystretch}{3em}
+\setlist{nosep,leftmargin=2em}
+
+% 页眉页脚
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small 社区区域气候模式预处理系统用户手册}
+\fancyfoot[R]{\large\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.3pt}
+
+\fancypagestyle{plain}{
+    \fancyhf{}
+    \fancyfoot[R]{\small\thepage}
+    \renewcommand{\headrulewidth}{0pt}
+    \renewcommand{\footrulewidth}{0.3pt}
+}
+
+% 封面参数：中文标题、英文标题、作者、版本、日期。
+\newcommand{\ManualCover}[5]{
+    \begin{titlepage}
+        \centering
+        \vspace*{35mm}
+        {\fontsize{27}{40}\selectfont\bfseries #1\par}
+        \vspace{12mm}
+        {\color{black}\rule{0.85\textwidth}{0.6pt}}\par
+        \vspace{8mm}
+        {\LARGE\bfseries #2\par}
+        \vspace{23mm}
+        {\large #3\par}
+        \vfill
+        {\large Version #4\\[4mm]#5\par}
+        \vspace{15mm}
+    \end{titlepage}
+}
+
+\newcommand{\ManualContents}{
+    \pagenumbering{Roman}
+    \tableofcontents
+    \clearpage
+    \pagenumbering{arabic}
+}
+
+\endinput
