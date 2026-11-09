@@ -286,7 +286,6 @@ dependencies:
   - pip:
       - affine==2.4.0
       - cftime==1.6.4.post1
-      - cresm-preprocessing-system==0.1.0
       - ncllibs2py==0.2.1
       - imageio==2.37.0
       - json5==0.12.0
