@@ -30,6 +30,8 @@ CPS 是为新一代国产区域地球系统模式 **CRESM** 开发的数据前�
 
 ### v1.2.6
 
+- 调整 ICBC 整段处理的结束时间延长量，由 12 小时改为 18 小时，以覆盖最后时次。（2026-11-12）
+- 调整 CoLM 初始场生成（`ICBC`）阶段的 `DEF_HIST_groupby`，由 `DAILY` 改为 `YEAR`，将逐日历史输出按年归档。（2026-11-12）
 - 新增 CPL7 Step1 的 ESMF 权重生成后端：`Use_ESMF=True` 时由 NCL 生成网格描述文件，再由 `ESMF_RegridWeightGen` 生成权重；关闭时保留原有 NCL 全流程。
 - 新增 Python 权重生成与 NCL/ESMF 权重对比工具，覆盖 CWRF、CoLM 与 FVCOM 耦合网格。
 - 将 `ncllibs2py` 固定为 PyPI 发布版 `0.2.1` 并纳入 `conda_envs/cresm.yml`，同步更新安装说明与用户手册。

@@ -1090,7 +1090,7 @@ def Modify_CoLMNML(casecfg, envcfg, gridname, run_type):
             'DEF_dir_output': f"'{CaseOutputPath}/{gridname}/PrepCoLM/Second_MakeSrf/'",
             'DEF_WRST_FREQ': "'MONTHLY'",
             'DEF_HIST_FREQ': "'DAILY'",
-            'DEF_HIST_groupby': "'DAILY'",
+            'DEF_HIST_groupby': "'YEAR'",
         }
     else:
         start_values = {

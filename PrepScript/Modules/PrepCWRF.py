@@ -785,7 +785,7 @@ def Second_ICBC(casecfg, envcfg, gridname):
             logger.info(f'{Consts.S4}!!! Processing the whole period in one go !!!')
             logger.info(f'{Consts.S8}--> It may take {timespan*4} minutes <--\n')
             start_time = StartTime
-            end_time = EndTime + timedelta(hours=12) # add 12 hours to include the last time
+            end_time = EndTime + timedelta(hours=18) # add 18 hours to include the last time
             timelist = [(start_time, end_time)]
             can_reuse_metgrid = Reuse_Metgrid and ICBC.Check_Metgrid_Batch_Finish(casecfg, envcfg, gridname, start_time, end_time, level='debug')
             if can_reuse_metgrid:
